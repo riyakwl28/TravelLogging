@@ -1,4 +1,4 @@
-package com.example.locationtracking;
+package com.example.locationtracking.Models;
 
 public class LocationDetails {
 

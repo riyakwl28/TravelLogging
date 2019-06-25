@@ -1,4 +1,4 @@
-package com.example.locationtracking;
+package com.example.locationtracking.Remote;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,18 +1,17 @@
-package com.example.locationtracking;
+package com.example.locationtracking.Activities;
 
-import android.app.Activity;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.graphics.Color;
-import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 
+import com.example.locationtracking.Remote.HttpConnection;
+import com.example.locationtracking.Remote.PathJSONParser;
+import com.example.locationtracking.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;

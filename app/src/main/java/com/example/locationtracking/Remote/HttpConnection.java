@@ -1,4 +1,4 @@
-package com.example.locationtracking;
+package com.example.locationtracking.Remote;
 
 import java.io.BufferedReader;
 import java.io.IOException;

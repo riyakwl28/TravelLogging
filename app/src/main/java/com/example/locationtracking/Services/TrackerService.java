@@ -1,5 +1,6 @@
-package com.example.locationtracking;
+package com.example.locationtracking.Services;
 
+import com.example.locationtracking.Models.LocationDetails;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -12,23 +13,18 @@ import com.google.firebase.database.FirebaseDatabase;
 
 
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.Manifest;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.widget.Toast;
-
-import java.util.UUID;
 
 public class TrackerService extends Service {
 
