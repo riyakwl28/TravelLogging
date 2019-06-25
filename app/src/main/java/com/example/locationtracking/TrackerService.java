@@ -23,8 +23,12 @@ import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
+import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.widget.Toast;
+
+import java.util.UUID;
 
 public class TrackerService extends Service {
 
@@ -72,12 +76,41 @@ public class TrackerService extends Service {
             client.requestLocationUpdates(request, new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
+//                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+//                    Location location = locationResult.getLastLocation();
+//                    if (location != null) {
+//                        Log.e(TAG, "location update " + location);
+//                        ref.push().setValue(location);
+//                    }
+                   long cellID = 0;
+                    int permission = ContextCompat.checkSelfPermission(getApplicationContext(),
+                            Manifest.permission.ACCESS_COARSE_LOCATION);
+                    if (permission == PackageManager.PERMISSION_GRANTED) {
+                        final TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        if (telephony.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
+                            GsmCellLocation loc = (GsmCellLocation) telephony.getCellLocation();
+                            if (loc != null)
+                            {
+                                cellID = loc.getCid() & 0xffff;
+                            }
+                        }
+                    }
+                    Log.e("outside",String.valueOf(cellID));
+
+
+
                     final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
-                    Location location = locationResult.getLastLocation();
+                    Location location=locationResult.getLastLocation();
+                    Double lat = locationResult.getLastLocation().getLatitude();
+
+                    Double lng=locationResult.getLastLocation().getLongitude();
+                    LocationDetails locationDetails = new LocationDetails(lat,lng,cellID);
                     if (location != null) {
                         Log.e(TAG, "location update " + location);
-                        ref.push().setValue(location);
+                       ref.push().setValue(locationDetails);
                     }
+
+
                 }
             }, null);
         }
