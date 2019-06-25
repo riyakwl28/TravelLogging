@@ -59,7 +59,6 @@ public class TrackerService extends Service {
 
     private void requestLocationUpdates() {
         LocationRequest request = new LocationRequest();
-        //to get loacation update every 10 min
         int Interval=10000;
         request.setInterval(Interval);
         request.setFastestInterval(5000);

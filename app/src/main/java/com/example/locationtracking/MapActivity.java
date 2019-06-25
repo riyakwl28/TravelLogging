@@ -45,46 +45,42 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
     private GoogleMap mMap;
     private String androidId;
-    static List<Double> latitudes;
-    static List<Double> longitudes;
+    String id;
+    List<LatLng> latLngs;
+
     DatabaseReference databaseReference;
     final String TAG = "PathGoogleMapActivity";
 
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-       String id= getIntent().getStringExtra("Trip Id");
-        Log.e("Map",id);
+
 
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        latitudes = new ArrayList<>();
-        longitudes=new ArrayList<>();
 
 
-     databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+        latLngs=new ArrayList<>();
+        id= getIntent().getStringExtra("Trip Id");
+        Log.e("Map",id);
+        databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+        readData(new FirebaseCallback() {
+            @Override
+            public void onCallback(List<LatLng> list) {
+                Log.e("fuck it",list.toString());
+            }
+        });
 
-     databaseReference.addValueEventListener(new ValueEventListener() {
-                                                    @Override
-                                                    public void onDataChange(DataSnapshot dataSnapshot) {
-                                                        for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
-                                                            //get lat and long from database and store it in a list
-                                                            Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
-                                                            latitudes.add(lat);
-                                                            Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
-                                                            longitudes.add(lng);
-                                                            Log.i("TAG", latitudes.toString());
-                                                        }
-                                                    }
 
-                                                    @Override
-                                                    public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                                    }
-                                                });
-     Log.e("tag",latitudes.toString());
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -93,9 +89,41 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 
 
 
-
-
     }
+
+
+    private void readData(final FirebaseCallback firebaseCallback){
+
+        ValueEventListener valueEventListener= databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
+                    //get lat and long from database and store it in a list
+                    Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
+
+                    Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
+
+                    latLngs.add(new LatLng(lat,lng));
+                }
+                firebaseCallback.onCallback(latLngs);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+
+            }
+
+        });
+        databaseReference.addListenerForSingleValueEvent(valueEventListener);
+    }
+
+
+    private interface FirebaseCallback{
+        void onCallback(List<LatLng> list);
+    }
+
+
 
     private String getMapsApiDirectionsUrl() {
 //        String waypoints = "waypoints=optimize:true|"
@@ -111,7 +139,7 @@ public class MapActivity extends FragmentActivity implements OnMapReadyCallback 
 //                + output + "?" + params;
 //        return url;
 
-
+        Log.e("fgh",latLngs.toString());
 
 
         // Origin of route

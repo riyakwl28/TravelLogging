@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     String androidId;
     ArrayAdapter<String> adapter;
-   static List<String> ar;
+    List<String> ar;
 
     private static final int PERMISSIONS_REQUEST = 1;
 
@@ -84,12 +84,17 @@ public class MainActivity extends AppCompatActivity {
 
        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
            @Override
-           public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+           public void onItemClick (AdapterView<?> parent,
+                                             View view,
+                                             int position,
+                                             long id){
 
-               Intent intent = new Intent(getApplicationContext(),MapActivity.class);
-               TextView tv=findViewById(R.id.label);
-               String data=tv.getText().toString();
-               intent.putExtra("Trip Id",data);
+               Intent intent = new Intent(getApplicationContext(),MapMarkerActivity.class);
+//               TextView textView = (TextView) view.findViewById(R.id.label);
+//               String text = textView.getText().toString();
+               String text = (String) listView.getItemAtPosition(position);
+               Log.e("textView",text);
+               intent.putExtra("Trip Id",text);
                startActivity(intent);
            }
        });
