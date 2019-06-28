@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.Manifest;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
@@ -31,12 +32,16 @@ public class TrackerService extends Service {
     private static final String TAG = TrackerService.class.getSimpleName();
     String id=null;
     String androidId;
+    String trackText;
+    private Handler handler;
+    FusedLocationProviderClient client;
     @Override
     public IBinder onBind(Intent intent) {return null;}
 
     @Override
     public void onCreate() {
         super.onCreate();
+        handler = new Handler();
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("ID",androidId);
 
@@ -48,8 +53,10 @@ public class TrackerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-       id= intent.getStringExtra("track id");
-       Log.e("Track id",id);
+//       id= intent.getStringExtra("track id");
+//       Log.e("Track id",id);
+       trackText=intent.getStringExtra("track text");
+       Log.e("Track Text",trackText);
         return super.onStartCommand(intent, flags, startId);
 
     }
@@ -66,6 +73,7 @@ public class TrackerService extends Service {
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
         int permission = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
+
         if (permission == PackageManager.PERMISSION_GRANTED) {
             // Request location updates and when an update is
             // received, store the location in Firebase
@@ -95,7 +103,7 @@ public class TrackerService extends Service {
 
 
 
-                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(trackText).child("locations");
                     Location location=locationResult.getLastLocation();
                     Double lat = locationResult.getLastLocation().getLatitude();
 
@@ -115,6 +123,9 @@ public class TrackerService extends Service {
     @Override
     public boolean stopService(Intent name) {
         return super.stopService(name);
+
+
+
     }
 
     @Override
@@ -122,6 +133,8 @@ public class TrackerService extends Service {
         super.onDestroy();
         stopSelf();
         Log.e("stop","activity stopped");
+        handler.removeCallbacksAndMessages(null);
+        handler = null;
     }
 
 }

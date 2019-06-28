@@ -1,19 +1,24 @@
 package com.example.locationtracking.Activities;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -33,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
 
     Button locationButton;
     ListView listView;
+    String m_Text;
+    private long startTime;
+    private long endTime;
 
     String androidId;
     ArrayAdapter<String> adapter;
@@ -52,6 +60,17 @@ public class MainActivity extends AppCompatActivity {
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("id",androidId);
         ar = new ArrayList<>();
+
+
+        int permission = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permission == PackageManager.PERMISSION_GRANTED) {
+
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST);
+        }
 
 
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
@@ -104,25 +123,73 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Button b = (Button)view;
 
+
+
                 String buttonText = b.getText().toString();
-                if(buttonText=="Enable Tracking")
-                {
-                    String id = UUID.randomUUID().toString();
-                    String uniqueId = id.substring(0, 7);
+//                    String id = UUID.randomUUID().toString();
+//                    String uniqueId = id.substring(0, 7);
+                if(buttonText.equals("Enable Tracking")) {
+                    startTime = System.currentTimeMillis();
                     b.setText("Disable Tracking");
-                    startTracking(uniqueId);
+                    buildDialog();
                 }
-                else
+
+
+
+                if(buttonText.equals("Disable Tracking"))
                 {
+
+                    endTime=getRunningTimeMillis();
+
+                    Log.e("time",String.valueOf(endTime));
+
+                    Intent i=new Intent(MainActivity.this,TrackerService.class);
+
+
+                    stopService(i);
                     b.setText("Enable Tracking");
-                    stopService(new Intent(MainActivity.this, TrackerService.class));
+
+
                 }
 
 
             }
         });
     }
-    private void startTracking(String id)
+
+    private void buildDialog() {
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = this.getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.dialog_layout, null);
+        dialogBuilder.setView(dialogView);
+
+        final EditText edt = (EditText) dialogView.findViewById(R.id.edit1);
+
+        dialogBuilder.setTitle("Custom dialog");
+        dialogBuilder.setMessage("Enter Trip Name");
+        dialogBuilder.setPositiveButton("Start Tracking", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+               m_Text=edt.getText().toString();
+                startTracking();
+            }
+        });
+        dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                //pass
+            }
+        });
+        AlertDialog b = dialogBuilder.create();
+        b.show();
+    }
+
+
+    public long getRunningTimeMillis() {
+        return System.currentTimeMillis() - startTime;
+    }
+
+
+    private void startTracking()
     {
         LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -132,17 +199,18 @@ public class MainActivity extends AppCompatActivity {
         int permission = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
         if (permission == PackageManager.PERMISSION_GRANTED) {
-            startTrackerService(id);
+            startTrackerService();
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST);
         }
     }
-    private void startTrackerService(String id) {
+    private void startTrackerService() {
         Intent i=new Intent(this,TrackerService.class);
 
-        i.putExtra("track id", id);
+//        i.putExtra("track id", id);
+        i.putExtra("track text", m_Text);
         startService(i);
 
 
