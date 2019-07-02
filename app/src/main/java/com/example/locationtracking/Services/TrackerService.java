@@ -32,7 +32,7 @@ public class TrackerService extends Service {
     private static final String TAG = TrackerService.class.getSimpleName();
     String id=null;
     String androidId;
-    String trackText;
+    String trackId;
     private Handler handler;
     FusedLocationProviderClient client;
     @Override
@@ -55,8 +55,8 @@ public class TrackerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 //       id= intent.getStringExtra("track id");
 //       Log.e("Track id",id);
-       trackText=intent.getStringExtra("track text");
-       Log.e("Track Text",trackText);
+       trackId=intent.getStringExtra("track id");
+       Log.e("Track id",trackId);
         return super.onStartCommand(intent, flags, startId);
 
     }
@@ -103,7 +103,7 @@ public class TrackerService extends Service {
 
 
 
-                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(trackText).child("locations");
+                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(trackId).child("locations");
                     Location location=locationResult.getLastLocation();
                     Double lat = locationResult.getLastLocation().getLatitude();
 
