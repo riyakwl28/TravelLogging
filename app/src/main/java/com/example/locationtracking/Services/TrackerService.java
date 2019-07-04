@@ -47,7 +47,7 @@ public class TrackerService extends Service {
 
         Toast.makeText(getApplicationContext(),"Started",Toast.LENGTH_LONG).show();
 
-        requestLocationUpdates();
+
 
     }
 
@@ -57,6 +57,7 @@ public class TrackerService extends Service {
 //       Log.e("Track id",id);
        trackId=intent.getStringExtra("track id");
        Log.e("Track id",trackId);
+        requestLocationUpdates();
         return super.onStartCommand(intent, flags, startId);
 
     }
@@ -123,16 +124,15 @@ public class TrackerService extends Service {
     @Override
     public boolean stopService(Intent name) {
         return super.stopService(name);
-
-
-
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        stopForeground(true);
         stopSelf();
         Log.e("stop","activity stopped");
+
         handler.removeCallbacksAndMessages(null);
         handler = null;
     }

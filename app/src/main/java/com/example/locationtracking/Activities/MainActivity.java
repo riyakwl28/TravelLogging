@@ -15,6 +15,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -48,11 +50,12 @@ public class MainActivity extends AppCompatActivity {
     Button locationButton;
     ListView listView;
     String m_Text;
-    int count=0;
+     int count=0;
     private long startTime;
     private long endTime;
     private  String timeHours;
     private String uniqueId2;
+    private MenuItem menuItemDelete;
 
    private String uniqueId;
    String uId;
@@ -75,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
         listView=findViewById(R.id.track_list);
         ar = new ArrayList<>();
+
 
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("id",androidId);
@@ -104,12 +108,14 @@ public class MainActivity extends AppCompatActivity {
                 for(DataSnapshot ds : dataSnapshot.getChildren()) {
                         String uid = ds.getKey();
                         Log.e("id", uid);
-                        String trackName = ds.child("others").child("trackName").getValue().toString();
-                        String distance = ds.child("others").child("distance").getValue().toString();
-                        String time = ds.child("others").child("time").getValue().toString();
-                        LocationData locationData = new LocationData(uid,trackName, distance, time);
-                        ar.add(locationData);
-                        Collections.reverse(ar);
+                        if(ds.child("others").exists()) {
+                            String trackName = ds.child("others").child("trackName").getValue().toString();
+                            String distance = ds.child("others").child("distance").getValue().toString();
+                            String time = ds.child("others").child("time").getValue().toString();
+                            LocationData locationData = new LocationData(uid, trackName, distance, time);
+                            ar.add(locationData);
+                            Collections.reverse(ar);
+                        }
 
                 }
                 customAdapter = new CustomAdapter(MainActivity.this,R.layout.list_item,ar);
@@ -152,13 +158,14 @@ public class MainActivity extends AppCompatActivity {
 
                 String buttonText = b.getText().toString();
 
-                uId=getUniqueId();
-                IdDetail idDetail=new IdDetail(uId);
-                uniqueId2=idDetail.getUniqueId();
 
 
 
                 if(buttonText.equals("Start Tracking")) {
+                    count=0;
+                    uId=getUniqueId();
+                    IdDetail idDetail=new IdDetail(uId);
+                    uniqueId2=idDetail.getUniqueId();
                     startTime = System.currentTimeMillis();
                     b.setText("Stop Tracking");
                     startTracking(uId);
@@ -265,9 +272,11 @@ final private String getUniqueId()
         dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                m_Text=edt.getText().toString();
-               if(m_Text=="")
+               if(m_Text.isEmpty())
                {
-                   m_Text="trip";
+                   String seq=UUID.randomUUID().toString();
+                   String sequence=seq.substring(0, 2);
+                   m_Text="trip_"+sequence;
                }
                Log.e("dialog",id1);
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("others");
@@ -316,6 +325,29 @@ final private String getUniqueId()
 
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        menuItemDelete = menu.findItem(R.id.action_delete);
+
+        menuItemDelete.setVisible(false);
+        menuItemDelete.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                return true;
+            }
+        });
+        return super.onCreateOptionsMenu(menu);
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+// super.onBackPressed();
+    }
+
 //    @Override
 //    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[]
 //            grantResults) {
