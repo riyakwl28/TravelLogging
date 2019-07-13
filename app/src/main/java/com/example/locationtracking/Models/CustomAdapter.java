@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.example.locationtracking.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CustomAdapter extends ArrayAdapter<LocationData> {
@@ -19,11 +20,54 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
     private  TextView nameView;
     private List<LocationData> list;
     private TextView timeView;
+    private List<String> idList;
+
+
+    private List<LocationData> listSelected;
+    private List<View> listSelectedRows;
 
     public CustomAdapter(Context context, int resource, List<LocationData> list) {
         super(context, resource,list);
         this.context = context;
         this.list = list;
+        listSelected = new ArrayList<>();
+        listSelectedRows = new ArrayList<>();
+        idList=new ArrayList<>();
+    }
+
+
+
+    public void handleLongPress(int position, View view){
+        final LocationData item = getItem(position);
+        idList.add(item.trackId);
+        if(listSelectedRows.contains(view)){
+            listSelectedRows.remove(view);
+            listSelected.remove(list.get(position));
+            view.setBackgroundResource(R.color.white);
+        }else{
+            listSelected.add(list.get(position));
+            listSelectedRows.add(view);
+            view.setBackgroundResource(R.color.darkgray);
+        }
+
+    }
+
+
+
+    public List<String> getIdList(){
+        return idList;
+    }
+    public List<LocationData> getListSelected(){
+        return listSelected;
+    }
+
+    public void removeSelected(){
+        list.removeAll(listSelected);
+
+        listSelected.clear();
+        for(View view : listSelectedRows)
+            view.setBackgroundResource(R.color.white);
+        listSelectedRows.clear();
     }
 
     @Override
@@ -33,7 +77,7 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         convertView = inflater.inflate(R.layout.list_item, null);
-        //final MediaPlayer mp= MediaPlayer.create( getContext(), item.song);
+
 
         idView = convertView.findViewById(R.id.tripid);
         idView.setText(item.trackId);

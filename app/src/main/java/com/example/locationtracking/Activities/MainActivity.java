@@ -3,11 +3,16 @@ package com.example.locationtracking.Activities;
 import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.os.Handler;
+import android.os.PersistableBundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -37,6 +42,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -50,15 +57,17 @@ public class MainActivity extends AppCompatActivity {
     Button locationButton;
     ListView listView;
     String m_Text;
-     int count=0;
+    int count=0;
     private long startTime;
     private long endTime;
     private  String timeHours;
     private String uniqueId2;
     private MenuItem menuItemDelete;
+    SharedPreferences pref;
+    SwipeRefreshLayout mSwipeRefreshLayout;
 
-   private String uniqueId;
-   String uId;
+    private String uniqueId;
+    String uId;
 
 
     String androidId;
@@ -70,22 +79,70 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         locationButton=findViewById(R.id.track_button);
 
         listView=findViewById(R.id.track_list);
+
         ar = new ArrayList<>();
 
+          String buttonState = LoadButtonState();
+            SharedPreferences preferences = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
 
+
+            if(buttonState.equals("Start Tracking")){
+                locationButton.setText("Stop Tracking");
+                count=preferences.getInt("count",0);
+                startTime=preferences.getLong("starttime",0);
+                uniqueId2=preferences.getString("tripId"," ");
+                startTracking(preferences.getString("tripId",null));
+            }
+            else if(buttonState.equals("Stop Tracking")){
+                locationButton.setText("Start Tracking");
+            }
+
+
+
+
+
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        linearLayoutManager.setStackFromEnd(true);
+        linearLayoutManager.setReverseLayout(true);
+
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.orange, R.color.green, R.color.blue);
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                //handling swipe refresh
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        listView.setAdapter(null);
+                        ar=new ArrayList<>();
+                        mSwipeRefreshLayout.setRefreshing(false);
+                        getListItems();
+                        customAdapter.notifyDataSetChanged();
+                        listView.smoothScrollToPosition(0);
+                    }
+                }, 2000);
+            }
+        });
+
+        //get unique id for a particular device
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("id",androidId);
-//        ar = new ArrayList<>();
-//        adapter=new ArrayAdapter<LocationOthersDetails>(this,R.layout.list_item,R.id.label,ar);
 
 
+        pref = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
+        final SharedPreferences.Editor editor = pref.edit();
+
+        //check for permission of location
         int permission = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
         if (permission == PackageManager.PERMISSION_GRANTED) {
@@ -96,56 +153,40 @@ public class MainActivity extends AppCompatActivity {
                     PERMISSIONS_REQUEST);
         }
 
+        getListItems();
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-        final DatabaseReference usersRef = rootRef.child(androidId);
-        usersRef.keepSynced(true);
-        ValueEventListener valueEventListener = new ValueEventListener() {
+
+
+        //on click of item list go to map Activity belonging to a particular trip
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onItemClick (AdapterView<?> parent,
+                                     View view,
+                                     int position,
+                                     long id){
 
-
-                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-                        String uid = ds.getKey();
-                        Log.e("id", uid);
-                        if(ds.child("others").exists()) {
-                            String trackName = ds.child("others").child("trackName").getValue().toString();
-                            String distance = ds.child("others").child("distance").getValue().toString();
-                            String time = ds.child("others").child("time").getValue().toString();
-                            LocationData locationData = new LocationData(uid, trackName, distance, time);
-                            ar.add(locationData);
-                            Collections.reverse(ar);
-                        }
-
-                }
-                customAdapter = new CustomAdapter(MainActivity.this,R.layout.list_item,ar);
-                listView.setStackFromBottom(false);
-                listView.setAdapter(customAdapter);
-
+                Intent intent = new Intent(getApplicationContext(), MapMarkerActivity.class);
+                String text =  ((TextView) view.findViewById(R.id.tripid)).getText().toString();
+                Log.e("textView",text);
+                intent.putExtra("Trip Id",text);
+                startActivity(intent);
             }
+        });
+
+        //for deletion of list item
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public void onCancelled(DatabaseError databaseError) {}
-        };
-        usersRef.addListenerForSingleValueEvent(valueEventListener);
-       // int count=idList.size();
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
 
-       listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-           @Override
-           public void onItemClick (AdapterView<?> parent,
-                                             View view,
-                                             int position,
-                                             long id){
-
-               Intent intent = new Intent(getApplicationContext(), MapMarkerActivity.class);
-//               TextView textView = (TextView) view.findViewById(R.id.label);
-//               String text = textView.getText().toString();
-               String text =  ((TextView) view.findViewById(R.id.tripid)).getText().toString();
-               Log.e("textView",text);
-               intent.putExtra("Trip Id",text);
-               startActivity(intent);
-           }
-       });
-
+                customAdapter.handleLongPress(i, view);
+                if(customAdapter.getListSelected().size() > 0){
+                    showDeleteMenu(true);
+                }else{
+                    showDeleteMenu(false);
+                }
+                return true;
+            }
+        });
 
 
 
@@ -154,12 +195,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Button b = (Button)view;
 
-
-
                 String buttonText = b.getText().toString();
-
-
-
 
                 if(buttonText.equals("Start Tracking")) {
                     count=0;
@@ -169,15 +205,18 @@ public class MainActivity extends AppCompatActivity {
                     startTime = System.currentTimeMillis();
                     b.setText("Stop Tracking");
                     startTracking(uId);
+                    SaveButtonState("Start Tracking");
+                    editor.putString("tripId",uniqueId2);
+                    editor.putLong("starttime",startTime);
+                    editor.putInt("count",count);
+                    editor.apply();
                 }
-
-
 
                 if(buttonText.equals("Stop Tracking"))
                 {
-
+                    SaveButtonState("Stop Tracking");
                     endTime=getRunningTimeMillis();
-                   timeHours= convertToMin(endTime);
+                    timeHours= convertToMin(endTime);
 
                     Log.e("time",timeHours);
                     Log.e("stop", uniqueId2);
@@ -186,9 +225,10 @@ public class MainActivity extends AppCompatActivity {
 
                     Intent i=new Intent(MainActivity.this,TrackerService.class);
 
-
                     stopService(i);
+
                     b.setText("Start Tracking");
+
 
 
                 }
@@ -196,24 +236,92 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-    }
-
-final private String getUniqueId()
-{
-
-    if(count==0) {
-        final String id = UUID.randomUUID().toString();
-        final String uniqueId = id.substring(0, 7);
-        count++;
-        return uniqueId;
 
     }
-    else{
-        String uniqueId=uId;
-        return uniqueId;
+
+
+
+    public void SaveButtonState(String bState){
+        SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
+        SharedPreferences.Editor edit = sharedPreferences.edit();
+        edit.putString("state", bState);
+        edit.apply();
     }
 
-}
+    public String LoadButtonState(){
+        SharedPreferences preferences = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
+        return preferences.getString("state", "DEFAULT");
+    }
+
+    private void retrieveValues() {
+        listView.setAdapter(null);
+        ar=new ArrayList<>();
+        getListItems();
+        customAdapter.notifyDataSetChanged();
+        listView.smoothScrollToPosition(0);
+    }
+
+    private void getListItems(){
+        //get list of trips from database
+
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId);
+        rootRef.keepSynced(true);
+        Query chatQuery = rootRef.orderByChild("timestamp"). limitToLast(100);
+        chatQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                int count=0;
+
+                for(DataSnapshot ds : dataSnapshot.getChildren()) {
+                    String uid = ds.getKey();
+                    Log.e("id", uid);
+                    if(ds.child("others").exists()) {
+                        String trackName = ds.child("others").child("trackName").getValue().toString();
+                        String distance = ds.child("others").child("distance").getValue().toString();
+                        String time = ds.child("others").child("time").getValue().toString();
+                        LocationData locationData = new LocationData(uid, trackName, distance, time);
+                        ar.add(count,locationData);
+
+                        count++;
+                    }
+
+                }
+                Collections.reverse(ar);
+                customAdapter = new CustomAdapter(MainActivity.this,R.layout.list_item,ar);
+                listView.setStackFromBottom(false);
+                listView.setAdapter(customAdapter);
+
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+        });
+
+    }
+
+    //to get trip id
+    final private String getUniqueId()
+    {
+
+        if(count==0) {
+            final String id = UUID.randomUUID().toString();
+            final String uniqueId = id.substring(0, 7);
+            count++;
+            return uniqueId;
+
+        }
+        else{
+            String uniqueId=uId;
+            return uniqueId;
+        }
+
+    }
+
+
+    private void showDeleteMenu(boolean show){
+        menuItemDelete.setVisible(show);
+
+    }
 
 
     private String convertToMin(long millis) {
@@ -271,22 +379,27 @@ final private String getUniqueId()
         dialogBuilder.setMessage("Enter Trip Name");
         dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
-               m_Text=edt.getText().toString();
-               if(m_Text.isEmpty())
-               {
-                   String seq=UUID.randomUUID().toString();
-                   String sequence=seq.substring(0, 2);
-                   m_Text="trip_"+sequence;
-               }
-               Log.e("dialog",id1);
+                m_Text=edt.getText().toString();
+                if(m_Text.isEmpty())
+                {
+                    String seq=UUID.randomUUID().toString();
+                    String sequence=seq.substring(0, 2);
+                    m_Text="trip_"+sequence;
+                }
+                Log.e("dialog",id1);
+                final DatabaseReference ref2=FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("timestamp");
+                ref2.setValue(ServerValue.TIMESTAMP);
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("others");
                 LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,"10",timeHours);
                 ref.setValue(locationOthersDetails);
+                retrieveValues();
             }
         });
         dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
-                //pass
+                final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1);
+
+                ref.removeValue();
             }
         });
         AlertDialog b = dialogBuilder.create();
@@ -318,8 +431,7 @@ final private String getUniqueId()
     }
     private void startTrackerService(String id) {
         Intent i=new Intent(this,TrackerService.class);
-
-
+        i.putExtra("fromWhere","main");
         i.putExtra("track id", id);
         startService(i);
 
@@ -329,17 +441,34 @@ final private String getUniqueId()
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
+        getMenuInflater().inflate(R.menu.delete_list, menu);
+
         menuItemDelete = menu.findItem(R.id.action_delete);
 
         menuItemDelete.setVisible(false);
         menuItemDelete.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
+                List<String > idList=customAdapter.getIdList();
+                for(String id:idList){
+                    DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
+                    ref.removeValue();
+                }
+
+                customAdapter.removeSelected();
+                customAdapter.notifyDataSetChanged();
+                showDeleteMenu(false);
                 return true;
             }
         });
         return super.onCreateOptionsMenu(menu);
 
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
     }
 
     @Override
