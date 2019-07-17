@@ -1,13 +1,16 @@
 package com.example.locationtracking.Models;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 
+import com.example.locationtracking.Activities.LocationActivity;
 import com.example.locationtracking.R;
 
 import java.util.ArrayList;
@@ -20,6 +23,9 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
     private  TextView nameView;
     private List<LocationData> list;
     private TextView timeView;
+    private TextView startTv,endTv;
+    private Button locationButton;
+
     private List<String> idList;
 
 
@@ -87,6 +93,19 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
         distView.setText(item.distance);
         timeView=convertView.findViewById(R.id.timeTv);
         timeView.setText(item.time);
+        startTv=convertView.findViewById(R.id.start_tv);
+        startTv.setText(item.startTime);
+        endTv=convertView.findViewById(R.id.end_tv);
+        endTv.setText(item.endTime);
+        locationButton=convertView.findViewById(R.id.location_btn);
+        locationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i=new Intent(context, LocationActivity.class);
+                i.putExtra("tripId",item.trackId);
+                context.startActivity(i);
+            }
+        });
         return convertView;
     }
 

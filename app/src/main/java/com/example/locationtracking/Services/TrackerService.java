@@ -11,9 +11,13 @@ import com.google.android.gms.location.LocationServices;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 
 
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -70,9 +74,11 @@ public class TrackerService extends Service {
             Double lat = locationResult.getLastLocation().getLatitude();
 
             Double lng=locationResult.getLastLocation().getLongitude();
+            Long tsLong = System.currentTimeMillis()/1000;
+            String ts = tsLong.toString();
             String locationName=getAddress(lat,lng);
             Log.e("tracker",locationName);
-            LocationDetails locationDetails = new LocationDetails(lat,lng,cellID);
+            LocationDetails locationDetails = new LocationDetails(lat,lng,cellID,locationName,ts);
             if (location != null) {
                 Log.e(TAG, "location update " + location);
                 ref.push().setValue(locationDetails);
@@ -94,13 +100,26 @@ public class TrackerService extends Service {
 
         Toast.makeText(getApplicationContext(),"Started",Toast.LENGTH_LONG).show();
 
+        startForeground(123456789, getNotification());
 
 
+    }
+
+    private Notification getNotification() {
+
+        NotificationChannel channel = new NotificationChannel("channel_01", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
+
+        Notification.Builder builder = new Notification.Builder(getApplicationContext(), "channel_01").setAutoCancel(true);
+        return builder.build();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
+        super.onStartCommand(intent, flags, startId);
         String strdata = intent.getStringExtra("fromWhere");
         if(strdata.equals("main")){
             trackId=intent.getStringExtra("track id");
@@ -109,9 +128,9 @@ public class TrackerService extends Service {
             trackId=intent.getStringExtra("broadcastId");
         }
 
-       Log.e("Track id",trackId);
+        Log.e("Track id",trackId);
         requestLocationUpdates();
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
 
     }
 
@@ -132,7 +151,7 @@ public class TrackerService extends Service {
 
             client.requestLocationUpdates(request, mLocationCallback, null);
         }
-        }
+    }
 
 
     public String  getAddress(double lat, double lng) {
@@ -142,10 +161,6 @@ public class TrackerService extends Service {
             List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
             Address obj = addresses.get(0);
             add = obj.getAddressLine(0);
-            add = add + "\n" + obj.getLocality();
-            add = add + "\n" + obj.getSubAdminArea();
-            add = add + "\n" + obj.getPostalCode();
-            add = add + "\n" + obj.getCountryName();
 
 
 
@@ -156,7 +171,7 @@ public class TrackerService extends Service {
             e.printStackTrace();
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-      return add;
+        return add;
     }
 
     @Override

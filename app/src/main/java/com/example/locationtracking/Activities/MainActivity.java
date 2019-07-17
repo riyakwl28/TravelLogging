@@ -6,10 +6,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -29,10 +31,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.locationtracking.Models.CustomAdapter;
+import com.example.locationtracking.Models.DistanceData;
 import com.example.locationtracking.Models.IdDetail;
 import com.example.locationtracking.Models.LocationData;
 import com.example.locationtracking.Models.LocationOthersDetails;
@@ -46,8 +50,10 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -62,12 +68,17 @@ public class MainActivity extends AppCompatActivity {
     private long endTime;
     private  String timeHours;
     private String uniqueId2;
+    private ProgressBar mProgess;
     private MenuItem menuItemDelete;
     SharedPreferences pref;
+    DistanceData distanceData;
+    Double lat1,lng1,lat2,lng2;
+    String start,end;
+
     SwipeRefreshLayout mSwipeRefreshLayout;
 
     private String uniqueId;
-    String uId;
+    String uId,dist;
 
 
     String androidId;
@@ -86,7 +97,10 @@ public class MainActivity extends AppCompatActivity {
 
         locationButton=findViewById(R.id.track_button);
 
+        distanceData=new DistanceData();
         listView=findViewById(R.id.track_list);
+        mProgess=findViewById(R.id.pb_loading_indicator);
+
 
         ar = new ArrayList<>();
 
@@ -200,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
                 if(buttonText.equals("Start Tracking")) {
                     count=0;
                     uId=getUniqueId();
+                    start= DateFormat.getDateTimeInstance().format(new Date());;
                     IdDetail idDetail=new IdDetail(uId);
                     uniqueId2=idDetail.getUniqueId();
                     startTime = System.currentTimeMillis();
@@ -215,19 +230,26 @@ public class MainActivity extends AppCompatActivity {
                 if(buttonText.equals("Stop Tracking"))
                 {
                     SaveButtonState("Stop Tracking");
+                    end=DateFormat.getDateTimeInstance().format(new Date());
                     endTime=getRunningTimeMillis();
                     timeHours= convertToMin(endTime);
 
                     Log.e("time",timeHours);
                     Log.e("stop", uniqueId2);
-
-                    buildDialog(uniqueId2);
-
                     Intent i=new Intent(MainActivity.this,TrackerService.class);
 
                     stopService(i);
 
+
+
+
+
                     b.setText("Start Tracking");
+                    dist=getDistance(uniqueId2);
+                    if(dist!=null)
+                    {
+                        buildDialog(uniqueId2);
+                    }
 
 
 
@@ -238,8 +260,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
-
 
     public void SaveButtonState(String bState){
         SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
@@ -275,12 +295,26 @@ public class MainActivity extends AppCompatActivity {
 
                 for(DataSnapshot ds : dataSnapshot.getChildren()) {
                     String uid = ds.getKey();
+                    String startTime;
+                    String endTime;
                     Log.e("id", uid);
                     if(ds.child("others").exists()) {
                         String trackName = ds.child("others").child("trackName").getValue().toString();
-                        String distance = ds.child("others").child("distance").getValue().toString();
+                        String distance =ds.child("others").child("distance").getValue().toString();
                         String time = ds.child("others").child("time").getValue().toString();
-                        LocationData locationData = new LocationData(uid, trackName, distance, time);
+                        if(ds.child("others").child("startTime").exists()) {
+                            startTime = ds.child("others").child("startTime").getValue().toString();
+                        }
+                        else{
+                            startTime=String.valueOf(0);
+                        }
+                        if(ds.child("others").child("endTime").exists()) {
+                            endTime = ds.child("others").child("endTime").getValue().toString();
+                        }
+                        else {
+                            endTime=String.valueOf(0);
+                        }
+                        LocationData locationData = new LocationData(uid, trackName, distance, time,startTime,endTime);
                         ar.add(count,locationData);
 
                         count++;
@@ -389,8 +423,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("dialog",id1);
                 final DatabaseReference ref2=FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("timestamp");
                 ref2.setValue(ServerValue.TIMESTAMP);
+
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("others");
-                LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,"10",timeHours);
+
+                LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,dist,timeHours,start,end);
                 ref.setValue(locationOthersDetails);
                 retrieveValues();
             }
@@ -400,7 +436,45 @@ public class MainActivity extends AppCompatActivity {
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1);
 
                 ref.removeValue();
-            }
+            }//    public String getDistance(String id)
+//    {
+//        Double lat1,lng1,lat2,lng2;
+//        final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
+//        Query getHighest=ref.child("locations").orderByChild("timeStamp").limitToLast(1);
+//        Query getLowest=ref.child("locations").orderByChild("timeStamp").limitToFirst(1);
+//        getHighest.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                 lat1 = dataSnapshot.child("latitude").getValue(Double.class);
+//
+//                 lng1 = dataSnapshot.child("longitude").getValue(Double.class);
+//
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
+//
+//        getLowest.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                Double lat2 = dataSnapshot.child("latitude").getValue(Double.class);
+//
+//                Double lng2 = dataSnapshot.child("longitude").getValue(Double.class);
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
+//
+//        String dist=calcDistance(lat1,lng1,lat2,lng2);
+//
+//
+//    }
         });
         AlertDialog b = dialogBuilder.create();
         b.show();
@@ -409,6 +483,88 @@ public class MainActivity extends AppCompatActivity {
 
     public long getRunningTimeMillis() {
         return System.currentTimeMillis() - startTime;
+    }
+
+    public String getDistance(String id)
+    {
+
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+        rootRef.keepSynced(true);
+        Query highestQuery = rootRef.orderByChild("timeStamp"). limitToLast(1);
+        highestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                for(DataSnapshot ds : dataSnapshot.getChildren()) {
+                    String uid = ds.getKey();
+                    Log.e("HIghets id", uid);
+
+                    if(ds.child("locations").exists()) {
+                        lat1 = ds.child("latitude").getValue(Double.class);
+                        lng1 = ds.child("longitude").getValue(Double.class);
+                        ;
+                        distanceData.setLat1(lat1);
+                        distanceData.setLng1(lng1);
+                    }
+
+                }
+
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+        });
+
+        Query lowestQuery = rootRef.orderByChild("timeStamp"). limitToFirst(1);
+        lowestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for(DataSnapshot ds : dataSnapshot.getChildren()) {
+                    String uid = ds.getKey();
+                    Log.e("LOwst id", uid);
+
+                    if(ds.child("locations").exists()) {
+                        lat2 = ds.child("latitude").getValue(Double.class);
+                        lng2 = ds.child("longitude").getValue(Double.class);
+
+                        distanceData.setLat2(lat2);
+                        distanceData.setLng2(lng2);
+                    }
+
+
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+        Double dist=distance(distanceData.getLat1(),distanceData.getLng1(),distanceData.getLat2(),distanceData.getLng2());
+
+        return Double.toString(dist);
+
+
+    }
+
+    private double distance(double lat1, double lon1, double lat2, double lon2) {
+        double theta = lon1 - lon2;
+        double dist = Math.sin(deg2rad(lat1))
+                * Math.sin(deg2rad(lat2))
+                + Math.cos(deg2rad(lat1))
+                * Math.cos(deg2rad(lat2))
+                * Math.cos(deg2rad(theta));
+        dist = Math.acos(dist);
+        dist = rad2deg(dist);
+        dist = dist * 60 * 1.1515;
+        return (dist);
+    }
+
+    private double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
+
+    private double rad2deg(double rad) {
+        return (rad * 180.0 / Math.PI);
     }
 
 

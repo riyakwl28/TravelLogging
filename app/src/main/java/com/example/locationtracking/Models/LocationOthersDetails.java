@@ -6,6 +6,26 @@ public class LocationOthersDetails {
 
     private String distance;
     private String time;
+   private String endTime;
+    private String startTime;
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+
 
     public String getTrackName() {
         return trackName;
@@ -31,10 +51,12 @@ public class LocationOthersDetails {
         this.time = time;
     }
 
-    public LocationOthersDetails(String trackName, String distance, String time) {
+    public LocationOthersDetails(String trackName, String distance, String time,String startTime,String endTime) {
         this.trackName = trackName;
         this.distance = distance;
         this.time = time;
+        this.endTime=endTime;
+        this.startTime=startTime;
     }
 
 
