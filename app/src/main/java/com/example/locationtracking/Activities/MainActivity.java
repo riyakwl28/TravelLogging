@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences pref;
     DistanceData distanceData;
     Double lat1,lng1,lat2,lng2;
-    String start,end;
+    private String start,end;
 
     SwipeRefreshLayout mSwipeRefreshLayout;
 
@@ -147,14 +147,15 @@ public class MainActivity extends AppCompatActivity {
                 }, 2000);
             }
         });
+        pref = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
+        final SharedPreferences.Editor editor = pref.edit();
 
         //get unique id for a particular device
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("id",androidId);
 
 
-        pref = getApplicationContext().getSharedPreferences("MyPref", MODE_PRIVATE);
-        final SharedPreferences.Editor editor = pref.edit();
+
 
         //check for permission of location
         int permission = ContextCompat.checkSelfPermission(this,
@@ -169,41 +170,6 @@ public class MainActivity extends AppCompatActivity {
 
         getListItems();
 
-
-
-        //on click of item list go to map Activity belonging to a particular trip
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick (AdapterView<?> parent,
-                                     View view,
-                                     int position,
-                                     long id){
-
-                Intent intent = new Intent(getApplicationContext(), MapMarkerActivity.class);
-                String text =  ((TextView) view.findViewById(R.id.tripid)).getText().toString();
-                Log.e("textView",text);
-                intent.putExtra("Trip Id",text);
-                startActivity(intent);
-            }
-        });
-
-        //for deletion of list item
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-                customAdapter.handleLongPress(i, view);
-                if(customAdapter.getListSelected().size() > 0){
-                    showDeleteMenu(true);
-                }else{
-                    showDeleteMenu(false);
-                }
-                return true;
-            }
-        });
-
-
-
         locationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -214,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 if(buttonText.equals("Start Tracking")) {
                     count=0;
                     uId=getUniqueId();
-                    start= DateFormat.getDateTimeInstance().format(new Date());;
+                    start= DateFormat.getDateTimeInstance().format(new Date());
                     IdDetail idDetail=new IdDetail(uId);
                     uniqueId2=idDetail.getUniqueId();
                     startTime = System.currentTimeMillis();
@@ -314,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
                         else {
                             endTime=String.valueOf(0);
                         }
-                        LocationData locationData = new LocationData(uid, trackName, distance, time,startTime,endTime);
+                        LocationData locationData = new LocationData(uid, trackName, distance, time,startTime,endTime,androidId);
                         ar.add(count,locationData);
 
                         count++;
@@ -352,10 +318,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void showDeleteMenu(boolean show){
-        menuItemDelete.setVisible(show);
-
-    }
 
 
     private String convertToMin(long millis) {
@@ -591,33 +553,6 @@ public class MainActivity extends AppCompatActivity {
         i.putExtra("track id", id);
         startService(i);
 
-
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-        getMenuInflater().inflate(R.menu.delete_list, menu);
-
-        menuItemDelete = menu.findItem(R.id.action_delete);
-
-        menuItemDelete.setVisible(false);
-        menuItemDelete.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                List<String > idList=customAdapter.getIdList();
-                for(String id:idList){
-                    DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
-                    ref.removeValue();
-                }
-
-                customAdapter.removeSelected();
-                customAdapter.notifyDataSetChanged();
-                showDeleteMenu(false);
-                return true;
-            }
-        });
-        return super.onCreateOptionsMenu(menu);
 
     }
 

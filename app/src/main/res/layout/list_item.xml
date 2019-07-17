@@ -125,16 +125,27 @@
             android:id="@+id/end_tv"/>
 
     </LinearLayout>
-
-    <Button
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:background="@drawable/rounded_button"
-        android:text="Locations"
+        android:orientation="horizontal">
+    <ImageButton
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:id="@+id/delete_button"
+        android:layout_marginLeft="100dp"
+        android:background="@drawable/delete"
+        android:padding="20dp"
+        />
+
+    <ImageButton
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="20dp"
+        android:layout_marginLeft="80dp"
         android:id="@+id/location_btn"
-        android:textSize="20sp"
-        android:textColor="#ffffff"/>
+        android:background="@drawable/location"/>
+    </LinearLayout>
 
     <View style="@style/Divider"/>
 </LinearLayout>

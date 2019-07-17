@@ -1,13 +1,17 @@
 package com.example.locationtracking.Activities;
 
+import android.content.Intent;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.ListView;
 
+import com.example.locationtracking.Models.LocationAdapter;
 import com.example.locationtracking.Models.LocationNameData;
 import com.example.locationtracking.R;
 import com.google.firebase.database.DataSnapshot;
@@ -18,7 +22,6 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class LocationActivity extends AppCompatActivity {
@@ -48,9 +51,10 @@ public class LocationActivity extends AppCompatActivity {
                 int count=0;
                 locationNameList=new ArrayList<>();
                 for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
+                    String id=zoneSnapshot.getKey();
                     String  name = zoneSnapshot.child("locationName").getValue().toString();
                     int number=count+1;
-                    LocationNameData locationNameData=new LocationNameData(name,number);
+                    LocationNameData locationNameData=new LocationNameData(name,number,id,androidId,tripId);
                     locationNameList.add(locationNameData);
                     count++;
                 }
@@ -69,4 +73,29 @@ public class LocationActivity extends AppCompatActivity {
         });
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        MenuInflater inflater = getMenuInflater();
+
+        inflater.inflate(R.menu.show_map, menu);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_show_map) {
+            Intent intent = new Intent(getApplicationContext(), MapMarkerActivity.class);
+            intent.putExtra("Trip Id",tripId);
+            startActivity(intent);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 }
