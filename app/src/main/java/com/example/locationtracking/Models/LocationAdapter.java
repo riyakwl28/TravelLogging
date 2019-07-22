@@ -61,7 +61,7 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
             @Override
             public void onClick(View view) {
 
-                Log.e("yoyo","hey fuck u");
+
                 Intent i=new Intent(context, LocationDescActivity.class);
                 i.putExtra("tripId",item.trackId);
                 i.putExtra("andId",item.andId);

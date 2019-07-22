@@ -1,11 +1,14 @@
 package com.example.locationtracking.Activities;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PersistableBundle;
@@ -42,6 +45,7 @@ import com.example.locationtracking.Models.LocationData;
 import com.example.locationtracking.Models.LocationOthersDetails;
 import com.example.locationtracking.R;
 import com.example.locationtracking.Services.TrackerService;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -50,6 +54,9 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     DistanceData distanceData;
     Double lat1,lng1,lat2,lng2;
     private String start,end;
+    Integer durationMenu;
 
     SwipeRefreshLayout mSwipeRefreshLayout;
 
@@ -97,6 +105,8 @@ public class MainActivity extends AppCompatActivity {
 
         locationButton=findViewById(R.id.track_button);
 
+        durationMenu=2;
+
         distanceData=new DistanceData();
         listView=findViewById(R.id.track_list);
         mProgess=findViewById(R.id.pb_loading_indicator);
@@ -111,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
             if(buttonState.equals("Start Tracking")){
                 locationButton.setText("Stop Tracking");
                 count=preferences.getInt("count",0);
+                start=preferences.getString("start",null);
                 startTime=preferences.getLong("starttime",0);
                 uniqueId2=preferences.getString("tripId"," ");
                 startTracking(preferences.getString("tripId",null));
@@ -140,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                         listView.setAdapter(null);
                         ar=new ArrayList<>();
                         mSwipeRefreshLayout.setRefreshing(false);
-                        getListItems();
+                        new CheckInternetAsyncTask(MainActivity.this).execute();
                         customAdapter.notifyDataSetChanged();
                         listView.smoothScrollToPosition(0);
                     }
@@ -168,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
                     PERMISSIONS_REQUEST);
         }
 
-        getListItems();
+        new CheckInternetAsyncTask(MainActivity.this).execute();
 
         locationButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -187,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
                     b.setText("Stop Tracking");
                     startTracking(uId);
                     SaveButtonState("Start Tracking");
+                    editor.putString("start",start);
                     editor.putString("tripId",uniqueId2);
                     editor.putLong("starttime",startTime);
                     editor.putInt("count",count);
@@ -211,11 +223,10 @@ public class MainActivity extends AppCompatActivity {
 
 
                     b.setText("Start Tracking");
-                    dist=getDistance(uniqueId2);
-                    if(dist!=null)
-                    {
+                    getDistanceValues(uniqueId2);
+
                         buildDialog(uniqueId2);
-                    }
+
 
 
 
@@ -242,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
     private void retrieveValues() {
         listView.setAdapter(null);
         ar=new ArrayList<>();
-        getListItems();
+        new CheckInternetAsyncTask(MainActivity.this).execute();
         customAdapter.notifyDataSetChanged();
         listView.smoothScrollToPosition(0);
     }
@@ -263,10 +274,24 @@ public class MainActivity extends AppCompatActivity {
                     String uid = ds.getKey();
                     String startTime;
                     String endTime;
+                    String distance;
                     Log.e("id", uid);
+                    if(ds.child("location1").child("lat1").exists() && ds.child("location2").child("lat2").exists() && ds.child("location1").child("lng1").exists() && ds.child("location2").child("lng2").exists() ) {
+                        Double lat1 = ds.child("location1").child("lat1").getValue(Double.class);
+                        Double lat2 = ds.child("location2").child("lat2").getValue(Double.class);
+                        Double lng1 = ds.child("location1").child("lng1").getValue(Double.class);
+                        Double lng2 = ds.child("location2").child("lng2").getValue(Double.class);
+                        Double dist = distance(lat1, lng1, lat2, lng2);
+
+                        distance = String.format("%.2f", dist);
+                    }
+                    else
+                    {
+                        distance="N/A";
+                    }
                     if(ds.child("others").exists()) {
                         String trackName = ds.child("others").child("trackName").getValue().toString();
-                        String distance =ds.child("others").child("distance").getValue().toString();
+
                         String time = ds.child("others").child("time").getValue().toString();
                         if(ds.child("others").child("startTime").exists()) {
                             startTime = ds.child("others").child("startTime").getValue().toString();
@@ -329,37 +354,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    private void diaologOnfinish() {
-//        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-//        LayoutInflater inflater = this.getLayoutInflater();
-//        final View dialogView = inflater.inflate(R.layout.dialog_onfinish, null);
-//        dialogBuilder.setView(dialogView);
-//
-//        final TextView edt =  dialogView.findViewById(R.id.dialog_onfinish_tv);
-//
-//        dialogBuilder.setTitle("Tracking trip");
-//        dialogBuilder.setMessage("Save trip");
-//        dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
-//            public void onClick(DialogInterface dialog, int whichButton) {
-//                final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(m_Text).child("others");
-//                LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,"10",timeHours);
-//                ref.setValue(locationOthersDetails);
-//
-//
-//            }
-//        });
-//        dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//            public void onClick(DialogInterface dialog, int whichButton) {
-//                //pass
-//            }
-//        });
-//        AlertDialog b = dialogBuilder.create();
-//        b.show();
-//
-//
-//
-//    }
-
     private void buildDialog(String id) {
         final String id1=id;
 
@@ -388,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
 
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1).child("others");
 
-                LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,dist,timeHours,start,end);
+                LocationOthersDetails locationOthersDetails=new LocationOthersDetails(m_Text,timeHours,start,end);
                 ref.setValue(locationOthersDetails);
                 retrieveValues();
             }
@@ -447,7 +441,8 @@ public class MainActivity extends AppCompatActivity {
         return System.currentTimeMillis() - startTime;
     }
 
-    public String getDistance(String id)
+
+    public void  getDistanceValues(final String id)
     {
 
         DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
@@ -461,13 +456,18 @@ public class MainActivity extends AppCompatActivity {
                     String uid = ds.getKey();
                     Log.e("HIghets id", uid);
 
-                    if(ds.child("locations").exists()) {
+
                         lat1 = ds.child("latitude").getValue(Double.class);
                         lng1 = ds.child("longitude").getValue(Double.class);
-                        ;
-                        distanceData.setLat1(lat1);
-                        distanceData.setLng1(lng1);
-                    }
+                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lat1");
+                    ref.setValue(lat1);
+                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lng1");
+                    ref2.setValue(lng1);
+
+//                        distanceData.setLat1(lat1);
+//                        distanceData.setLng1(lng1);
+
+
 
                 }
 
@@ -484,13 +484,19 @@ public class MainActivity extends AppCompatActivity {
                     String uid = ds.getKey();
                     Log.e("LOwst id", uid);
 
-                    if(ds.child("locations").exists()) {
+
                         lat2 = ds.child("latitude").getValue(Double.class);
                         lng2 = ds.child("longitude").getValue(Double.class);
 
-                        distanceData.setLat2(lat2);
-                        distanceData.setLng2(lng2);
-                    }
+                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lat2");
+                    ref.setValue(lat2);
+                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lng2");
+                    ref2.setValue(lng2);
+
+//                        distanceData.setLat2(lat2);
+//                        distanceData.setLng2(lng2);
+
+
 
 
                 }
@@ -501,10 +507,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        Double dist=distance(distanceData.getLat1(),distanceData.getLng1(),distanceData.getLat2(),distanceData.getLng2());
-
-        return Double.toString(dist);
-
 
     }
 
@@ -551,9 +553,41 @@ public class MainActivity extends AppCompatActivity {
         Intent i=new Intent(this,TrackerService.class);
         i.putExtra("fromWhere","main");
         i.putExtra("track id", id);
+        i.putExtra("duration",String.valueOf(durationMenu));
         startService(i);
 
 
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.item0:
+                durationMenu=1;
+                Toast.makeText(getApplicationContext(),"Tracking for every 1 minute",Toast.LENGTH_LONG).show();
+                return true;
+            case R.id.item1:
+                durationMenu=2;
+                Toast.makeText(getApplicationContext(),"Tracking for every 2 minutes",Toast.LENGTH_LONG).show();
+                return true;
+            case R.id.item2:
+                durationMenu=5;
+                Toast.makeText(getApplicationContext(),"Tracking for every 5 minutes",Toast.LENGTH_LONG).show();
+                return true;
+            case R.id.item3:
+                durationMenu=10;
+                Toast.makeText(getApplicationContext(),"Tracking for every 10 minutes",Toast.LENGTH_LONG).show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
 
@@ -565,18 +599,72 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         moveTaskToBack(true);
-// super.onBackPressed();
+
     }
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[]
-//            grantResults) {
-//        if (requestCode == PERMISSIONS_REQUEST && grantResults.length == 1
-//                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//            // Start the service when the permission is granted
-//            startTrackerService(id);
-//        } else {
-//            finish();
-//        }
-//    }
+    private class CheckInternetAsyncTask extends AsyncTask<Void, Integer, Boolean> {
+
+        private Context context;
+
+        public CheckInternetAsyncTask(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            ConnectivityManager cm =
+                    (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            assert cm != null;
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            boolean isConnected = activeNetwork != null &&
+                    activeNetwork.isConnected();
+
+
+            if (isConnected) {
+                try {
+                    HttpURLConnection urlc = (HttpURLConnection)
+                            (new URL("http://clients3.google.com/generate_204")
+                                    .openConnection());
+                    urlc.setRequestProperty("User-Agent", "Android");
+                    urlc.setRequestProperty("Connection", "close");
+                    urlc.setConnectTimeout(1500);
+                    urlc.connect();
+                    if (urlc.getResponseCode() == 204 &&
+                            urlc.getContentLength() == 0)
+                        return true;
+
+                } catch (IOException e) {
+                    Log.e("TAG", "Error checking internet connection", e);
+                    return false;
+                }
+            } else {
+                Log.d("TAG", "No network available!");
+                return false;
+            }
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
+            Log.d("TAG", "result" + result);
+
+            if(result){
+              getListItems();
+            }
+            else
+            {
+                Toast.makeText(getApplicationContext(),"Error Downloading data",Toast.LENGTH_LONG).show();
+            }
+
+        }
+
+
+    }
+
+
 }

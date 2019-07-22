@@ -26,6 +26,9 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.Manifest;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -35,23 +38,32 @@ import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class TrackerService extends Service {
 
     private static final String TAG = TrackerService.class.getSimpleName();
-    String id=null;
+    String id = null;
     String androidId;
     String trackId;
+    Integer duration;
     private Handler handler;
     LocationRequest request;
     FusedLocationProviderClient client;
-    LocationCallback mLocationCallback = new LocationCallback(){
+    LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             long cellID = 0;
+            String locationName=null;
 
             int permission = ContextCompat.checkSelfPermission(getApplicationContext(),
                     Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -59,34 +71,44 @@ public class TrackerService extends Service {
                 final TelephonyManager telephony = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
                 if (telephony.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM) {
                     GsmCellLocation loc = (GsmCellLocation) telephony.getCellLocation();
-                    if (loc != null)
-                    {
+                    if (loc != null) {
                         cellID = loc.getCid() & 0xffff;
                     }
                 }
             }
-            Log.e("outside",String.valueOf(cellID));
+            Log.e("outside", String.valueOf(cellID));
 
 
 
-            final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(trackId).child("locations");
-            Location location=locationResult.getLastLocation();
-            Double lat = locationResult.getLastLocation().getLatitude();
+                final DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(androidId).child(trackId).child("locations");
+                Location location = locationResult.getLastLocation();
+                Double lat = locationResult.getLastLocation().getLatitude();
 
-            Double lng=locationResult.getLastLocation().getLongitude();
-            Long tsLong = System.currentTimeMillis()/1000;
-            String ts = tsLong.toString();
-            String locationName=getAddress(lat,lng);
-            Log.e("tracker",locationName);
-            LocationDetails locationDetails = new LocationDetails(lat,lng,cellID,locationName,ts);
-            if (location != null) {
-                Log.e(TAG, "location update " + location);
-                ref.push().setValue(locationDetails);
-            }
+                Double lng = locationResult.getLastLocation().getLongitude();
+                Long tsLong = System.currentTimeMillis() / 1000;
+                String ts = tsLong.toString();
 
-        };
+
+
+
+
+
+
+
+                if (location != null ) {
+                    locationName = getAddress(lat, lng);
+                    if(locationName==null){
+                        locationName="N/A";
+                    }
+                    LocationDetails locationDetails = new LocationDetails(lat, lng, cellID, locationName, ts);
+                    Log.e(TAG, "location update " + location);
+                    ref.push().setValue(locationDetails);
+                }
+
+        }
 
     };
+
     @Override
     public IBinder onBind(Intent intent) {return null;}
 
@@ -98,9 +120,9 @@ public class TrackerService extends Service {
         Log.e("ID",androidId);
         client = LocationServices.getFusedLocationProviderClient(this);
 
-        Toast.makeText(getApplicationContext(),"Started",Toast.LENGTH_LONG).show();
 
-        startForeground(123456789, getNotification());
+
+
 
 
     }
@@ -127,9 +149,13 @@ public class TrackerService extends Service {
         else if(strdata.equals("boot")){
             trackId=intent.getStringExtra("broadcastId");
         }
+        duration=Integer.valueOf(intent.getStringExtra("duration"));
 
         Log.e("Track id",trackId);
-        requestLocationUpdates();
+
+        new CheckInternetAsyncTask(getApplicationContext()).execute();
+
+
         return START_STICKY;
 
     }
@@ -139,9 +165,9 @@ public class TrackerService extends Service {
 
     private void requestLocationUpdates() {
         request = new LocationRequest();
-        int Interval=10000;
+        int Interval=10*60*1000;
         request.setInterval(Interval);
-        request.setFastestInterval(5000);
+        request.setFastestInterval(duration*60*1000);
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         int permission = ContextCompat.checkSelfPermission(this,
@@ -169,7 +195,7 @@ public class TrackerService extends Service {
         } catch (IOException e) {
 
             e.printStackTrace();
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("Getting address","failed");
         }
         return add;
     }
@@ -197,4 +223,71 @@ public class TrackerService extends Service {
         handler = null;
     }
 
+private class CheckInternetAsyncTask extends AsyncTask<Void, Integer, Boolean> {
+
+    private Context context;
+
+    public CheckInternetAsyncTask(Context context) {
+        this.context = context;
+    }
+
+    @Override
+    protected Boolean doInBackground(Void... params) {
+
+        ConnectivityManager cm =
+                (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        assert cm != null;
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnected();
+
+
+        if (isConnected) {
+            try {
+                HttpURLConnection urlc = (HttpURLConnection)
+                        (new URL("http://clients3.google.com/generate_204")
+                                .openConnection());
+                urlc.setRequestProperty("User-Agent", "Android");
+                urlc.setRequestProperty("Connection", "close");
+                urlc.setConnectTimeout(1500);
+                urlc.connect();
+                if (urlc.getResponseCode() == 204 &&
+                        urlc.getContentLength() == 0)
+                    return true;
+
+            } catch (IOException e) {
+                Log.e("TAG", "Error checking internet connection", e);
+                return false;
+            }
+        } else {
+            Log.d("TAG", "No network available!");
+            return false;
+        }
+
+
+        return null;
+    }
+
+    @Override
+    protected void onPostExecute(Boolean result) {
+        super.onPostExecute(result);
+        Log.d("TAG", "result" + result);
+
+        if(result){
+            startForeground(123456789, getNotification());
+            Toast.makeText(getApplicationContext(),"Started",Toast.LENGTH_LONG).show();
+            requestLocationUpdates();
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(),"NO Network Available",Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+
 }
+
+}
+

@@ -3,8 +3,6 @@ package com.example.locationtracking.Models;
 public class LocationOthersDetails {
 
     private String trackName;
-
-    private String distance;
     private String time;
    private String endTime;
     private String startTime;
@@ -35,13 +33,8 @@ public class LocationOthersDetails {
         this.trackName = trackName;
     }
 
-    public String getDistance() {
-        return distance;
-    }
 
-    public void setDistance(String distance) {
-        this.distance = distance;
-    }
+
 
     public String getTime() {
         return time;
@@ -51,9 +44,8 @@ public class LocationOthersDetails {
         this.time = time;
     }
 
-    public LocationOthersDetails(String trackName, String distance, String time,String startTime,String endTime) {
+    public LocationOthersDetails(String trackName, String time,String startTime,String endTime) {
         this.trackName = trackName;
-        this.distance = distance;
         this.time = time;
         this.endTime=endTime;
         this.startTime=startTime;

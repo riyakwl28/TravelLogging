@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.example.locationtracking.R;
 import com.google.firebase.database.DataSnapshot;
@@ -59,6 +60,7 @@ public class LocationDescActivity extends AppCompatActivity {
 
                 databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(tripId).child("locations").child(locationId).child("desc");
                 databaseReference.setValue(m_text);
+                Toast.makeText(LocationDescActivity.this,"Data Saved",Toast.LENGTH_SHORT).show();
             }
         });
 

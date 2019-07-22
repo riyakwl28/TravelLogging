@@ -49,10 +49,13 @@ public class LocationActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 int count=0;
+                String name;
                 locationNameList=new ArrayList<>();
                 for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
                     String id=zoneSnapshot.getKey();
-                    String  name = zoneSnapshot.child("locationName").getValue().toString();
+
+                        name = zoneSnapshot.child("locationName").getValue().toString();
+
                     int number=count+1;
                     LocationNameData locationNameData=new LocationNameData(name,number,id,androidId,tripId);
                     locationNameList.add(locationNameData);
