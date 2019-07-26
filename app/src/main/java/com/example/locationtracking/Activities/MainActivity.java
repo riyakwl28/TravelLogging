@@ -13,11 +13,14 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -75,11 +78,11 @@ public class MainActivity extends AppCompatActivity {
     private long endTime;
     private  String timeHours;
     private String uniqueId2;
+    private DrawerLayout mDrawerLayout;
+    private ActionBarDrawerToggle mToggle;
     private ProgressBar mProgess;
-    private MenuItem menuItemDelete;
     SharedPreferences pref;
     DistanceData distanceData;
-    Double lat1,lng1,lat2,lng2;
     private String start,end;
     Integer durationMenu;
 
@@ -102,6 +105,12 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mDrawerLayout=findViewById(R.id.drawer_layout);
+        mToggle=new ActionBarDrawerToggle(this,mDrawerLayout,R.string.open,R.string.close);
+        mDrawerLayout.addDrawerListener(mToggle);
+        mToggle.syncState();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         locationButton=findViewById(R.id.track_button);
 
@@ -270,23 +279,31 @@ public class MainActivity extends AppCompatActivity {
 
                 int count=0;
 
+
                 for(DataSnapshot ds : dataSnapshot.getChildren()) {
                     String uid = ds.getKey();
                     String startTime;
                     String endTime;
                     String distance;
                     Log.e("id", uid);
-                    if(ds.child("location1").child("lat1").exists() && ds.child("location2").child("lat2").exists() && ds.child("location1").child("lng1").exists() && ds.child("location2").child("lng2").exists() ) {
-                        Double lat1 = ds.child("location1").child("lat1").getValue(Double.class);
-                        Double lat2 = ds.child("location2").child("lat2").getValue(Double.class);
-                        Double lng1 = ds.child("location1").child("lng1").getValue(Double.class);
-                        Double lng2 = ds.child("location2").child("lng2").getValue(Double.class);
-                        Double dist = distance(lat1, lng1, lat2, lng2);
+//                    if(ds.child("location1").child("lat1").exists() && ds.child("location2").child("lat2").exists() && ds.child("location1").child("lng1").exists() && ds.child("location2").child("lng2").exists() ) {
+//                        Double lat1 = ds.child("location1").child("lat1").getValue(Double.class);
+//                        Double lat2 = ds.child("location2").child("lat2").getValue(Double.class);
+//                        Double lng1 = ds.child("location1").child("lng1").getValue(Double.class);
+//                        Double lng2 = ds.child("location2").child("lng2").getValue(Double.class);
+//                        Double dist = distance(lat1, lng1, lat2, lng2);
+//
+//                        distance = String.format("%.2f", dist);
+//                    }
+//                    else
+//                    {
+//                        distance="N/A";
+//                    }
 
-                        distance = String.format("%.2f", dist);
+                    if(ds.child("totalDist").exists()) {
+                        distance = ds.child("totalDist").getValue().toString();
                     }
-                    else
-                    {
+                    else{
                         distance="N/A";
                     }
                     if(ds.child("others").exists()) {
@@ -442,64 +459,110 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void  getDistanceValues(final String id)
-    {
+//    public void  getDistanceValues(final String id)
+//    {
+//
+//        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+//        rootRef.keepSynced(true);
+//        Query highestQuery = rootRef.orderByChild("timeStamp"). limitToLast(1);
+//        highestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//
+//                for(DataSnapshot ds : dataSnapshot.getChildren()) {
+//                    String uid = ds.getKey();
+//                    Log.e("HIghets id", uid);
+//
+//
+//                        lat1 = ds.child("latitude").getValue(Double.class);
+//                        lng1 = ds.child("longitude").getValue(Double.class);
+//                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lat1");
+//                    ref.setValue(lat1);
+//                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lng1");
+//                    ref2.setValue(lng1);
+//
+////                        distanceData.setLat1(lat1);
+////                        distanceData.setLng1(lng1);
+//
+//
+//
+//                }
+//
+//            }
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {}
+//        });
+//
+//        Query lowestQuery = rootRef.orderByChild("timeStamp"). limitToFirst(1);
+//        lowestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                for(DataSnapshot ds : dataSnapshot.getChildren()) {
+//                    String uid = ds.getKey();
+//                    Log.e("LOwst id", uid);
+//
+//
+//                        lat2 = ds.child("latitude").getValue(Double.class);
+//                        lng2 = ds.child("longitude").getValue(Double.class);
+//
+//                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lat2");
+//                    ref.setValue(lat2);
+//                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lng2");
+//                    ref2.setValue(lng2);
+//
+////                        distanceData.setLat2(lat2);
+////                        distanceData.setLng2(lng2);
+//
+//
+//
+//
+//                }
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
+//
+//    }
+//
+//    private double distance(double lat1, double lon1, double lat2, double lon2) {
+//        double theta = lon1 - lon2;
+//        double dist = Math.sin(deg2rad(lat1))
+//                * Math.sin(deg2rad(lat2))
+//                + Math.cos(deg2rad(lat1))
+//                * Math.cos(deg2rad(lat2))
+//                * Math.cos(deg2rad(theta));
+//        dist = Math.acos(dist);
+//        dist = rad2deg(dist);
+//        dist = dist * 60 * 1.1515;
+//        return (dist);
+//    }
+//
+//    private double deg2rad(double deg) {
+//        return (deg * Math.PI / 180.0);
+//    }
+//
+//    private double rad2deg(double rad) {
+//        return (rad * 180.0 / Math.PI);
+//    }
+//
 
-        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
-        rootRef.keepSynced(true);
-        Query highestQuery = rootRef.orderByChild("timeStamp"). limitToLast(1);
-        highestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-                    String uid = ds.getKey();
-                    Log.e("HIghets id", uid);
-
-
-                        lat1 = ds.child("latitude").getValue(Double.class);
-                        lng1 = ds.child("longitude").getValue(Double.class);
-                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lat1");
-                    ref.setValue(lat1);
-                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lng1");
-                    ref2.setValue(lng1);
-
-//                        distanceData.setLat1(lat1);
-//                        distanceData.setLng1(lng1);
-
-
-
-                }
-
-            }
-            @Override
-            public void onCancelled(DatabaseError databaseError) {}
-        });
-
-        Query lowestQuery = rootRef.orderByChild("timeStamp"). limitToFirst(1);
-        lowestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+    private void getDistanceValues(final String id){
+        final DatabaseReference ref=FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+        Query chatQuery = ref.orderByChild("timeStamp"). limitToLast(100);
+        chatQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-                    String uid = ds.getKey();
-                    Log.e("LOwst id", uid);
+                Double dist=0.00;
 
-
-                        lat2 = ds.child("latitude").getValue(Double.class);
-                        lng2 = ds.child("longitude").getValue(Double.class);
-
-                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lat2");
-                    ref.setValue(lat2);
-                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lng2");
-                    ref2.setValue(lng2);
-
-//                        distanceData.setLat2(lat2);
-//                        distanceData.setLng2(lng2);
-
-
-
-
+                for(DataSnapshot ds:dataSnapshot.getChildren()){
+                    Double distance=Double.valueOf(ds.child("distance").getValue().toString());
+                    dist=distance+dist;
                 }
+                DatabaseReference ref1=FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("totalDist");
+                ref1.setValue(String.valueOf(dist));
             }
 
             @Override
@@ -507,30 +570,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
     }
-
-    private double distance(double lat1, double lon1, double lat2, double lon2) {
-        double theta = lon1 - lon2;
-        double dist = Math.sin(deg2rad(lat1))
-                * Math.sin(deg2rad(lat2))
-                + Math.cos(deg2rad(lat1))
-                * Math.cos(deg2rad(lat2))
-                * Math.cos(deg2rad(theta));
-        dist = Math.acos(dist);
-        dist = rad2deg(dist);
-        dist = dist * 60 * 1.1515;
-        return (dist);
-    }
-
-    private double deg2rad(double deg) {
-        return (deg * Math.PI / 180.0);
-    }
-
-    private double rad2deg(double rad) {
-        return (rad * 180.0 / Math.PI);
-    }
-
 
     private void startTracking(String id)
     {
@@ -567,6 +607,9 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+       if( mToggle.onOptionsItemSelected(item)){
+            return true;
+        }
         int id = item.getItemId();
         switch (id){
             case R.id.item0:

@@ -8,6 +8,49 @@ public class LocationDetails {
   private long CellId;
     private String LocationName;
     private String TimeStamp;
+    private String Distance;
+    private String Start;
+    private Integer Mnc,Lac,Mcc;
+
+    public Integer getMnc() {
+        return Mnc;
+    }
+
+    public void setMnc(Integer mnc) {
+        Mnc = mnc;
+    }
+
+    public Integer getLac() {
+        return Lac;
+    }
+
+    public void setLac(Integer lac) {
+        Lac = lac;
+    }
+
+    public Integer getMcc() {
+        return Mcc;
+    }
+
+    public void setMcc(Integer mcc) {
+        Mcc = mcc;
+    }
+
+    public String getStart() {
+        return Start;
+    }
+
+    public void setStart(String start) {
+        Start = start;
+    }
+
+    public String getDistance() {
+        return Distance;
+    }
+
+    public void setDistance(String distance) {
+        Distance = distance;
+    }
 
     public String getTimeStamp() {
         return TimeStamp;
@@ -51,11 +94,16 @@ public class LocationDetails {
         CellId = cellId;
     }
 
-    public LocationDetails(Double latitude, Double longitude, long cellId,String locationName,String timeStamp) {
+    public LocationDetails(Double latitude, Double longitude, long cellId,String locationName,String timeStamp,String distance,String start,Integer lac,Integer mcc,Integer mnc) {
         Latitude = latitude;
         Longitude = longitude;
         CellId = cellId;
         LocationName=locationName;
         TimeStamp=timeStamp;
+        Distance=distance;
+        Start=start;
+        Lac=lac;
+        Mcc=mcc;
+        Mnc=mnc;
     }
 }

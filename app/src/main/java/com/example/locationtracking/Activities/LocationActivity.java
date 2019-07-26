@@ -1,14 +1,18 @@
 package com.example.locationtracking.Activities;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.ListView;
 
 import com.example.locationtracking.Models.LocationAdapter;
@@ -21,12 +25,15 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class LocationActivity extends AppCompatActivity {
 
+
     private String tripId;
+
     private ListView listView;
     private List<LocationNameData> locationNameList;
     private LocationAdapter locationAdapter;
@@ -41,6 +48,7 @@ public class LocationActivity extends AppCompatActivity {
         listView=findViewById(R.id.location_lv);
 
 
+
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(tripId).child("locations");
         Query chatQuery = databaseReference.orderByChild("timeStamp"). limitToLast(100);
@@ -49,15 +57,29 @@ public class LocationActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 int count=0;
-                String name;
+                String name,lastD,time;
                 locationNameList=new ArrayList<>();
                 for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
                     String id=zoneSnapshot.getKey();
 
                         name = zoneSnapshot.child("locationName").getValue().toString();
+                        if(zoneSnapshot.child("distance").exists()) {
+                            lastD = zoneSnapshot.child("distance").getValue().toString();
+                        }
+                        else
+                        {
+                            lastD="N/A";
+                        }
+                        if(zoneSnapshot.child("start").exists()) {
+                            time = zoneSnapshot.child("start").getValue().toString();
+                        }
+                        else
+                        {
+                            time="N/A";
+                        }
 
                     int number=count+1;
-                    LocationNameData locationNameData=new LocationNameData(name,number,id,androidId,tripId);
+                    LocationNameData locationNameData=new LocationNameData(name,number,id,androidId,tripId,lastD,time);
                     locationNameList.add(locationNameData);
                     count++;
                 }
@@ -100,5 +122,6 @@ public class LocationActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
 
 }

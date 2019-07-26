@@ -1,6 +1,8 @@
 package com.example.locationtracking.Models;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.provider.Settings;
@@ -79,10 +81,28 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
         deleteBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
-                ref.removeValue();
-                list.remove(position); //or some other task
-                notifyDataSetChanged();
+
+                AlertDialog.Builder alert = new AlertDialog.Builder(context);
+                alert.setTitle("Delete entry");
+                alert.setMessage("Are you sure you want to delete?");
+                alert.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+
+                    public void onClick(DialogInterface dialog, int which) {
+                        DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
+                        ref.removeValue();
+                        list.remove(position); //or some other task
+                        notifyDataSetChanged();
+                    }
+                });
+                alert.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // close dialog
+                        dialog.cancel();
+                    }
+                });
+                alert.show();
+
             }
         });
         return convertView;

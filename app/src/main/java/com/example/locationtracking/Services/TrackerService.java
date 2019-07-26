@@ -21,6 +21,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -45,6 +46,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -56,14 +59,22 @@ public class TrackerService extends Service {
     String androidId;
     String trackId;
     Integer duration;
+    SharedPreferences preferences;
+    SharedPreferences.Editor editor;
     private Handler handler;
     LocationRequest request;
     FusedLocationProviderClient client;
     LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
+
+
             long cellID = 0;
+
+            Integer lac=0,mcc=0,mnc=0;
             String locationName=null;
+            Double dist;
+            String distance;
 
             int permission = ContextCompat.checkSelfPermission(getApplicationContext(),
                     Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -73,6 +84,12 @@ public class TrackerService extends Service {
                     GsmCellLocation loc = (GsmCellLocation) telephony.getCellLocation();
                     if (loc != null) {
                         cellID = loc.getCid() & 0xffff;
+                        lac=loc.getLac();
+                        String networkOperator = telephony.getNetworkOperator();
+                        if (networkOperator != null && networkOperator.length() > 0) {
+                            mcc = Integer.parseInt(networkOperator.substring(0, 3));
+                            mnc = Integer.parseInt(networkOperator.substring(3));
+                        }
                     }
                 }
             }
@@ -82,13 +99,31 @@ public class TrackerService extends Service {
 
                 final DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(androidId).child(trackId).child("locations");
                 Location location = locationResult.getLastLocation();
+
+               Double pLat= Double.valueOf(preferences.getString("lat","0.0"));
+               Double pLng= Double.valueOf(preferences.getString("lng","0.0"));
+
+
                 Double lat = locationResult.getLastLocation().getLatitude();
 
                 Double lng = locationResult.getLastLocation().getLongitude();
+            if(pLat==0.0 && pLng==0.0) {
+                distance="0.00";
+            }
+            else {
+                dist = distance(pLat, pLng, lat, lng);
+                distance = String.format("%.2f", dist);
+            }
+
+            editor.putString("lat",String.valueOf(lat));
+            editor.putString("lng",String.valueOf(lng));
+            editor.apply();
+
                 Long tsLong = System.currentTimeMillis() / 1000;
                 String ts = tsLong.toString();
 
 
+            String start= DateFormat.getDateTimeInstance().format(new Date());
 
 
 
@@ -100,7 +135,7 @@ public class TrackerService extends Service {
                     if(locationName==null){
                         locationName="N/A";
                     }
-                    LocationDetails locationDetails = new LocationDetails(lat, lng, cellID, locationName, ts);
+                    LocationDetails locationDetails = new LocationDetails(lat, lng, cellID, locationName, ts,distance,start,lac,mcc,mnc);
                     Log.e(TAG, "location update " + location);
                     ref.push().setValue(locationDetails);
                 }
@@ -115,6 +150,9 @@ public class TrackerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+         preferences = getBaseContext().getSharedPreferences("LocData", MODE_PRIVATE);
+         editor = preferences.edit();
+
         handler = new Handler();
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("ID",androidId);
@@ -136,6 +174,28 @@ public class TrackerService extends Service {
 
         Notification.Builder builder = new Notification.Builder(getApplicationContext(), "channel_01").setAutoCancel(true);
         return builder.build();
+    }
+
+
+    private double distance(double lat1, double lon1, double lat2, double lon2) {
+        double theta = lon1 - lon2;
+        double dist = Math.sin(deg2rad(lat1))
+                * Math.sin(deg2rad(lat2))
+                + Math.cos(deg2rad(lat1))
+                * Math.cos(deg2rad(lat2))
+                * Math.cos(deg2rad(theta));
+        dist = Math.acos(dist);
+        dist = rad2deg(dist);
+        dist = dist * 60 * 1.1515;
+        return (dist);
+    }
+
+    private double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
+
+    private double rad2deg(double rad) {
+        return (rad * 180.0 / Math.PI);
     }
 
     @Override
@@ -165,9 +225,9 @@ public class TrackerService extends Service {
 
     private void requestLocationUpdates() {
         request = new LocationRequest();
-        int Interval=10*60*1000;
+        int Interval=10000;
         request.setInterval(Interval);
-        request.setFastestInterval(duration*60*1000);
+        request.setFastestInterval(5000);
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         int permission = ContextCompat.checkSelfPermission(this,

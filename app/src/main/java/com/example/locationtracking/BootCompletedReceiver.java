@@ -24,7 +24,6 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             i.putExtra("fromWhere","boot");
             i.putExtra("broadcastId",str);
             context.startService(i);
-            throw new UnsupportedOperationException("Not yet implemented");
         }
     }
 }

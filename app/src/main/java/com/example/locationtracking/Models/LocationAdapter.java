@@ -30,7 +30,7 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
     DatabaseReference databaseReference;
     private String locationId,androidId,tripId;
     private List<LocationNameData > list;
-    private TextView name_view,number_view;
+    private TextView name_view,number_view,dist_view,time_view;
     private ImageButton img_btn;
     private String m_Text;
 
@@ -52,6 +52,10 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
         locationId=item.locationId;
         androidId=item.andId;
         tripId=item.trackId;
+        dist_view=convertView.findViewById(R.id.dist_last_tv);
+        dist_view.setText(item.lastDistance);
+        time_view=convertView.findViewById(R.id.loc_time_tv);
+        time_view.setText(item.locTime);
         name_view=convertView.findViewById(R.id.locationName);
         name_view.setText(item.locationName);
         number_view=convertView.findViewById(R.id.locationNumber);

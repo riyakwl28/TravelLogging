@@ -85,10 +85,11 @@ public class MapMarkerActivity extends FragmentActivity implements OnMapReadyCal
                     Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
 
                     Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
+                    String distance=zoneSnapshot.child("distance").getValue().toString();
                     LatLng point=new LatLng(lat,lng);
 
                     MarkerOptions marker = new MarkerOptions();
-                    marker.position(point).title("Point"+count);
+                    marker.position(point).title("Distance:"+distance);
 
                     marker.icon(BitmapDescriptorFactory
                             .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
