@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/current" android:title="Ongoing Trip" android:icon="@drawable/ic_location_on_black_24dp"/>
     <item android:title="Settings" android:id="@+id/settings" android:icon="@drawable/ic_settings_black_24dp"/>
     <item android:title="About Us" android:id="@+id/about_us" android:icon="@drawable/ic_people_black_24dp"/>
     <item android:title="How it Works?" android:id="@+id/working" android:icon="@drawable/ic_help_black_24dp"/>
+
 
 </menu>

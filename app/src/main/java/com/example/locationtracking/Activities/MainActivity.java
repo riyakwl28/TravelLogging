@@ -12,12 +12,12 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.PersistableBundle;
-import android.preference.PreferenceManager;
-import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -25,15 +25,11 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -48,7 +44,6 @@ import com.example.locationtracking.Models.LocationData;
 import com.example.locationtracking.Models.LocationOthersDetails;
 import com.example.locationtracking.R;
 import com.example.locationtracking.Services.TrackerService;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -68,7 +63,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     Button locationButton;
     ListView listView;
@@ -78,13 +73,15 @@ public class MainActivity extends AppCompatActivity {
     private long endTime;
     private  String timeHours;
     private String uniqueId2;
+    private String edit_time_text;
     private DrawerLayout mDrawerLayout;
     private ActionBarDrawerToggle mToggle;
     private ProgressBar mProgess;
     SharedPreferences pref;
     DistanceData distanceData;
+    private TextView androidIdtv;
     private String start,end;
-    Integer durationMenu;
+
 
     SwipeRefreshLayout mSwipeRefreshLayout;
 
@@ -105,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setNavigationViewListner();
 
         mDrawerLayout=findViewById(R.id.drawer_layout);
         mToggle=new ActionBarDrawerToggle(this,mDrawerLayout,R.string.open,R.string.close);
@@ -113,8 +111,9 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         locationButton=findViewById(R.id.track_button);
+        androidIdtv=findViewById(R.id.android_id_tv);
 
-        durationMenu=2;
+
 
         distanceData=new DistanceData();
         listView=findViewById(R.id.track_list);
@@ -175,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
         Log.e("id",androidId);
 
 
+        androidIdtv.setText(androidId);
 
 
         //check for permission of location
@@ -211,7 +211,12 @@ public class MainActivity extends AppCompatActivity {
                     editor.putString("tripId",uniqueId2);
                     editor.putLong("starttime",startTime);
                     editor.putInt("count",count);
+                    editor.putInt("flag",1);
+
                     editor.apply();
+                    Intent i=new Intent(MainActivity.this,CurrentMapActivity.class);
+                    i.putExtra("Trip Id",uniqueId2);
+                    startActivity(i);
                 }
 
                 if(buttonText.equals("Stop Tracking"))
@@ -221,6 +226,8 @@ public class MainActivity extends AppCompatActivity {
                     endTime=getRunningTimeMillis();
                     timeHours= convertToMin(endTime);
 
+                    editor.putInt("flag",0);
+                    editor.apply();
                     Log.e("time",timeHours);
                     Log.e("stop", uniqueId2);
                     Intent i=new Intent(MainActivity.this,TrackerService.class);
@@ -286,19 +293,6 @@ public class MainActivity extends AppCompatActivity {
                     String endTime;
                     String distance;
                     Log.e("id", uid);
-//                    if(ds.child("location1").child("lat1").exists() && ds.child("location2").child("lat2").exists() && ds.child("location1").child("lng1").exists() && ds.child("location2").child("lng2").exists() ) {
-//                        Double lat1 = ds.child("location1").child("lat1").getValue(Double.class);
-//                        Double lat2 = ds.child("location2").child("lat2").getValue(Double.class);
-//                        Double lng1 = ds.child("location1").child("lng1").getValue(Double.class);
-//                        Double lng2 = ds.child("location2").child("lng2").getValue(Double.class);
-//                        Double dist = distance(lat1, lng1, lat2, lng2);
-//
-//                        distance = String.format("%.2f", dist);
-//                    }
-//                    else
-//                    {
-//                        distance="N/A";
-//                    }
 
                     if(ds.child("totalDist").exists()) {
                         distance = ds.child("totalDist").getValue().toString();
@@ -409,45 +403,7 @@ public class MainActivity extends AppCompatActivity {
                 final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id1);
 
                 ref.removeValue();
-            }//    public String getDistance(String id)
-//    {
-//        Double lat1,lng1,lat2,lng2;
-//        final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id);
-//        Query getHighest=ref.child("locations").orderByChild("timeStamp").limitToLast(1);
-//        Query getLowest=ref.child("locations").orderByChild("timeStamp").limitToFirst(1);
-//        getHighest.addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                 lat1 = dataSnapshot.child("latitude").getValue(Double.class);
-//
-//                 lng1 = dataSnapshot.child("longitude").getValue(Double.class);
-//
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//        getLowest.addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                Double lat2 = dataSnapshot.child("latitude").getValue(Double.class);
-//
-//                Double lng2 = dataSnapshot.child("longitude").getValue(Double.class);
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//        String dist=calcDistance(lat1,lng1,lat2,lng2);
-//
-//
-//    }
+            }
         });
         AlertDialog b = dialogBuilder.create();
         b.show();
@@ -459,95 +415,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    public void  getDistanceValues(final String id)
-//    {
-//
-//        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
-//        rootRef.keepSynced(true);
-//        Query highestQuery = rootRef.orderByChild("timeStamp"). limitToLast(1);
-//        highestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(DataSnapshot dataSnapshot) {
-//
-//                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-//                    String uid = ds.getKey();
-//                    Log.e("HIghets id", uid);
-//
-//
-//                        lat1 = ds.child("latitude").getValue(Double.class);
-//                        lng1 = ds.child("longitude").getValue(Double.class);
-//                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lat1");
-//                    ref.setValue(lat1);
-//                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location1").child("lng1");
-//                    ref2.setValue(lng1);
-//
-////                        distanceData.setLat1(lat1);
-////                        distanceData.setLng1(lng1);
-//
-//
-//
-//                }
-//
-//            }
-//            @Override
-//            public void onCancelled(DatabaseError databaseError) {}
-//        });
-//
-//        Query lowestQuery = rootRef.orderByChild("timeStamp"). limitToFirst(1);
-//        lowestQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-//            @Override
-//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-//                for(DataSnapshot ds : dataSnapshot.getChildren()) {
-//                    String uid = ds.getKey();
-//                    Log.e("LOwst id", uid);
-//
-//
-//                        lat2 = ds.child("latitude").getValue(Double.class);
-//                        lng2 = ds.child("longitude").getValue(Double.class);
-//
-//                    final DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lat2");
-//                    ref.setValue(lat2);
-//                    final DatabaseReference ref2= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("location2").child("lng2");
-//                    ref2.setValue(lng2);
-//
-////                        distanceData.setLat2(lat2);
-////                        distanceData.setLng2(lng2);
-//
-//
-//
-//
-//                }
-//            }
-//
-//            @Override
-//            public void onCancelled(@NonNull DatabaseError databaseError) {
-//
-//            }
-//        });
-//
-//    }
-//
-//    private double distance(double lat1, double lon1, double lat2, double lon2) {
-//        double theta = lon1 - lon2;
-//        double dist = Math.sin(deg2rad(lat1))
-//                * Math.sin(deg2rad(lat2))
-//                + Math.cos(deg2rad(lat1))
-//                * Math.cos(deg2rad(lat2))
-//                * Math.cos(deg2rad(theta));
-//        dist = Math.acos(dist);
-//        dist = rad2deg(dist);
-//        dist = dist * 60 * 1.1515;
-//        return (dist);
-//    }
-//
-//    private double deg2rad(double deg) {
-//        return (deg * Math.PI / 180.0);
-//    }
-//
-//    private double rad2deg(double rad) {
-//        return (rad * 180.0 / Math.PI);
-//    }
-//
+
 
     private void getDistanceValues(final String id){
         final DatabaseReference ref=FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
@@ -590,13 +458,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private void startTrackerService(String id) {
+
         Intent i=new Intent(this,TrackerService.class);
         i.putExtra("fromWhere","main");
         i.putExtra("track id", id);
-        i.putExtra("duration",String.valueOf(durationMenu));
+
         startService(i);
 
 
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        SharedPreferences prefs = getSharedPreferences("MyPref", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("lastActivity", getClass().getName());
+        editor.apply();
     }
 
     @Override
@@ -607,33 +485,118 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        SharedPreferences preferences=getSharedPreferences("MyPref",MODE_PRIVATE);
+        SharedPreferences.Editor edit=preferences.edit();
        if( mToggle.onOptionsItemSelected(item)){
             return true;
         }
         int id = item.getItemId();
+       double durationMenu;
         switch (id){
+            case R.id.item4:
+                durationMenu=0.5;
+                Toast.makeText(getApplicationContext(),"Tracking for every 30 seconds",Toast.LENGTH_LONG).show();
+                edit.putString("duration",String.valueOf(durationMenu));
+                edit.apply();
+                return true;
             case R.id.item0:
                 durationMenu=1;
                 Toast.makeText(getApplicationContext(),"Tracking for every 1 minute",Toast.LENGTH_LONG).show();
+                edit.putString("duration",String.valueOf(durationMenu));
+                edit.apply();
                 return true;
             case R.id.item1:
                 durationMenu=2;
                 Toast.makeText(getApplicationContext(),"Tracking for every 2 minutes",Toast.LENGTH_LONG).show();
+                edit.putString("duration",String.valueOf(durationMenu));
+                edit.apply();
                 return true;
             case R.id.item2:
                 durationMenu=5;
                 Toast.makeText(getApplicationContext(),"Tracking for every 5 minutes",Toast.LENGTH_LONG).show();
+                edit.putString("duration",String.valueOf(durationMenu));
+                edit.apply();
                 return true;
             case R.id.item3:
                 durationMenu=10;
                 Toast.makeText(getApplicationContext(),"Tracking for every 10 minutes",Toast.LENGTH_LONG).show();
+                edit.putString("duration",String.valueOf(durationMenu));
+                edit.apply();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
+
         }
+
+
     }
 
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
 
+        switch (id) {
+            case R.id.settings:
+                buildDialogTime();
+                return true;
+            case R.id.about_us:
+                Intent i=new Intent(MainActivity.this,AboutUsActivity.class);
+                startActivity(i);
+                return true;
+            case R.id.working:
+                Intent j=new Intent(MainActivity.this,HowItWorksActivity.class);
+                startActivity(j);
+                return true;
+            case  R.id.current:
+                Intent k=new Intent(MainActivity.this, CurrentMapActivity.class);
+                k.putExtra("Trip Id",uniqueId2);
+                startActivity(k);
+                return true;
+
+
+        }
+        mDrawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
+    private void buildDialogTime() {
+
+
+        SharedPreferences preferences=getSharedPreferences("MyPref",MODE_PRIVATE);
+        final SharedPreferences.Editor edit=preferences.edit();
+
+
+
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = this.getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.dialog_time, null);
+        dialogBuilder.setView(dialogView);
+
+        final EditText edt = (EditText) dialogView.findViewById(R.id.edit_time);
+
+        dialogBuilder.setTitle("Location Update Time");
+        dialogBuilder.setMessage("Enter in Minutes(Number)");
+        dialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+             edit_time_text=edt.getText().toString();
+             double durationMenu=Integer.valueOf(edit_time_text);
+             edit.putString("duration",String.valueOf(durationMenu));
+             edit.apply();
+            }
+        });
+        dialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+
+            }
+        });
+        AlertDialog b = dialogBuilder.create();
+        b.show();
+    }
+
+    private void setNavigationViewListner() {
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+    }
     @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);

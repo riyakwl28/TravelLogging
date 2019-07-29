@@ -2,6 +2,7 @@ package com.example.locationtracking.Services;
 
 import com.example.locationtracking.Activities.MainActivity;
 import com.example.locationtracking.Models.LocationDetails;
+import com.example.locationtracking.Helpers.NotificationHelper;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -11,13 +12,12 @@ import com.google.android.gms.location.LocationServices;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
 
 
-import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -39,18 +39,13 @@ import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.widget.Toast;
 
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 public class TrackerService extends Service {
 
@@ -58,8 +53,9 @@ public class TrackerService extends Service {
     String id = null;
     String androidId;
     String trackId;
-    Integer duration;
+    Double duration;
     SharedPreferences preferences;
+    NotificationHelper notificationHelper;
     SharedPreferences.Editor editor;
     private Handler handler;
     LocationRequest request;
@@ -152,8 +148,11 @@ public class TrackerService extends Service {
         super.onCreate();
          preferences = getBaseContext().getSharedPreferences("LocData", MODE_PRIVATE);
          editor = preferences.edit();
+       SharedPreferences pref2=getBaseContext().getSharedPreferences("MyPref",MODE_PRIVATE);
+        duration=Double.valueOf(pref2.getString("duration","1.0"));
 
         handler = new Handler();
+        notificationHelper=new NotificationHelper(this);
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         Log.e("ID",androidId);
         client = LocationServices.getFusedLocationProviderClient(this);
@@ -172,8 +171,17 @@ public class TrackerService extends Service {
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
 
-        Notification.Builder builder = new Notification.Builder(getApplicationContext(), "channel_01").setAutoCancel(true);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 1,
+                new Intent(getBaseContext(), MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification.Builder builder = new Notification.Builder(getApplicationContext(), "channel_01").setAutoCancel(true).setContentIntent(contentIntent);
+
+
+
+
+
         return builder.build();
+
+
     }
 
 
@@ -209,7 +217,9 @@ public class TrackerService extends Service {
         else if(strdata.equals("boot")){
             trackId=intent.getStringExtra("broadcastId");
         }
-        duration=Integer.valueOf(intent.getStringExtra("duration"));
+
+
+        Log.e("Duration",String.valueOf(duration));
 
         Log.e("Track id",trackId);
 
@@ -225,9 +235,10 @@ public class TrackerService extends Service {
 
     private void requestLocationUpdates() {
         request = new LocationRequest();
-        int Interval=10000;
-        request.setInterval(Interval);
-        request.setFastestInterval(5000);
+        double data=duration*60*1000;
+        int interval=(int)data;
+        request.setInterval(interval);
+        request.setFastestInterval(interval);
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         int permission = ContextCompat.checkSelfPermission(this,
@@ -269,6 +280,7 @@ public class TrackerService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopForeground(true);
+        notificationHelper.getManager().cancel(1);
 
         if(client!=null) {
             client.removeLocationUpdates(mLocationCallback);
@@ -335,8 +347,9 @@ private class CheckInternetAsyncTask extends AsyncTask<Void, Integer, Boolean> {
         Log.d("TAG", "result" + result);
 
         if(result){
-            startForeground(123456789, getNotification());
-            Toast.makeText(getApplicationContext(),"Started",Toast.LENGTH_LONG).show();
+//            startForeground(123456789, getNotification());
+            Notification.Builder nb=notificationHelper.getChannelNotification();
+            notificationHelper.getManager().notify(1,nb.build());
             requestLocationUpdates();
         }
         else

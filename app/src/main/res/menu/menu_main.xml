@@ -1,7 +1,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-
     >
+    <item android:id="@+id/item4"
+        android:title="30 seconds"/>
 
     <item android:id="@+id/item0"
         android:title="1 minute"/>
