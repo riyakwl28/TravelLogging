@@ -43,60 +43,84 @@ public class LocationActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_location);
-        tripId= getIntent().getStringExtra("tripId");
-        Log.e("LocationActivity",tripId);
-        listView=findViewById(R.id.location_lv);
+        tripId = getIntent().getStringExtra("tripId");
+        listView = findViewById(R.id.location_lv);
 
 
+        if (tripId != null) {
 
-        androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(tripId).child("locations");
-        Query chatQuery = databaseReference.orderByChild("timeStamp"). limitToLast(100);
-        chatQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            androidId = getIntent().getStringExtra("androidId");
+            databaseReference = FirebaseDatabase.getInstance().getReference().child(androidId).child(tripId).child("locations");
+            Query chatQuery = databaseReference.orderByChild("timeStamp").limitToLast(100);
+            chatQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
-                int count=0;
-                String name,lastD,time;
-                locationNameList=new ArrayList<>();
-                for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
-                    String id=zoneSnapshot.getKey();
+                    int count = 0;
+                    String lac, mcc, mnc, cellId, mode;
+                    String name, lastD, time;
+                    locationNameList = new ArrayList<>();
+                    for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
+                        String id = zoneSnapshot.getKey();
 
                         name = zoneSnapshot.child("locationName").getValue().toString();
-                        if(zoneSnapshot.child("distance").exists()) {
+                        if (zoneSnapshot.child("distance").exists()) {
                             lastD = zoneSnapshot.child("distance").getValue().toString();
+                        } else {
+                            lastD = "N/A";
                         }
-                        else
-                        {
-                            lastD="N/A";
-                        }
-                        if(zoneSnapshot.child("start").exists()) {
+                        if (zoneSnapshot.child("start").exists()) {
                             time = zoneSnapshot.child("start").getValue().toString();
-                        }
-                        else
-                        {
-                            time="N/A";
+                        } else {
+                            time = "N/A";
                         }
 
-                    int number=count+1;
-                    LocationNameData locationNameData=new LocationNameData(name,number,id,androidId,tripId,lastD,time);
-                    locationNameList.add(locationNameData);
-                    count++;
+                        if (zoneSnapshot.child("cellId").exists()) {
+                            cellId = zoneSnapshot.child("cellId").getValue().toString();
+                        } else {
+                            cellId = "N/A";
+                        }
+                        if (zoneSnapshot.child("lac").exists()) {
+                            lac = zoneSnapshot.child("lac").getValue().toString();
+                        } else {
+                            lac = "N/A";
+                        }
+                        if (zoneSnapshot.child("mcc").exists()) {
+                            mcc = zoneSnapshot.child("mcc").getValue().toString();
+                        } else {
+                            mcc = "N/A";
+                        }
+                        if (zoneSnapshot.child("mnc").exists()) {
+                            mnc = zoneSnapshot.child("mnc").getValue().toString();
+                        } else {
+                            mnc = "N/A";
+                        }
+                        if (zoneSnapshot.child("mode").exists()) {
+                            mode = zoneSnapshot.child("mode").getValue().toString();
+                        } else {
+                            mode = "N/A";
+                        }
+
+
+                        int number = count + 1;
+                        LocationNameData locationNameData = new LocationNameData(name, number, id, androidId, tripId, lastD, time, cellId, lac, mcc, mnc, mode);
+                        locationNameList.add(locationNameData);
+                        count++;
+                    }
+                    locationAdapter = new LocationAdapter(LocationActivity.this, R.layout.list_location_item, locationNameList);
+                    listView.setStackFromBottom(false);
+                    listView.setAdapter(locationAdapter);
+
+
                 }
-               locationAdapter =new LocationAdapter(LocationActivity.this,R.layout.list_location_item,locationNameList);
-                listView.setStackFromBottom(false);
-                listView.setAdapter(locationAdapter);
 
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                }
+            });
 
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
-        });
-
+        }
     }
 
     @Override
@@ -115,6 +139,7 @@ public class LocationActivity extends AppCompatActivity {
 
         if (id == R.id.action_show_map) {
             Intent intent = new Intent(getApplicationContext(), MapMarkerActivity.class);
+            intent.putExtra("androidId",androidId);
             intent.putExtra("Trip Id",tripId);
             startActivity(intent);
             return true;

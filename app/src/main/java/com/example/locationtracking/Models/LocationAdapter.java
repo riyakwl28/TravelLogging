@@ -3,6 +3,7 @@ package com.example.locationtracking.Models;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
@@ -30,7 +31,7 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
     DatabaseReference databaseReference;
     private String locationId,androidId,tripId;
     private List<LocationNameData > list;
-    private TextView name_view,number_view,dist_view,time_view;
+    private TextView name_view,number_view,dist_view,time_view,cellIdView,lacView,mccView,mncView,modeView;
     private ImageButton img_btn;
     private String m_Text;
 
@@ -46,6 +47,7 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
     public View getView(int position, View convertView, ViewGroup parent) {
 
         final LocationNameData item = getItem(position);
+        SharedPreferences preferences=context.getSharedPreferences("MyPref",Context.MODE_PRIVATE);
 
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         convertView = inflater.inflate(R.layout.list_location_item, null);
@@ -60,6 +62,16 @@ public class LocationAdapter extends ArrayAdapter<LocationNameData> {
         name_view.setText(item.locationName);
         number_view=convertView.findViewById(R.id.locationNumber);
         number_view.setText(String.valueOf(item.locationNumber));
+        cellIdView=convertView.findViewById(R.id.cellId_tv);
+        cellIdView.setText(item.cellId);
+        lacView=convertView.findViewById(R.id.lac_tv);
+        lacView.setText(item.lac);
+        mccView=convertView.findViewById(R.id.mcc_tv);
+        mccView.setText(item.mcc);
+        mncView=convertView.findViewById(R.id.mnc_tv);
+        mncView.setText(item.mnc);
+        modeView=convertView.findViewById(R.id.mode_tv);
+        modeView.setText(item.mode);
         img_btn=convertView.findViewById(R.id.add_note_btn);
         img_btn.setOnClickListener(new View.OnClickListener() {
             @Override

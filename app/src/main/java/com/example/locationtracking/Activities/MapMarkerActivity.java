@@ -53,12 +53,12 @@ public class MapMarkerActivity extends FragmentActivity implements OnMapReadyCal
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map_marker);
-        androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        androidId = getIntent().getStringExtra("androidId");
 
 
 
         id= getIntent().getStringExtra("Trip Id");
-        Log.e("Map",id);
+
 
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -73,63 +73,70 @@ public class MapMarkerActivity extends FragmentActivity implements OnMapReadyCal
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap=googleMap;
-        databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
-        ValueEventListener valueEventListener= databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                int count=1;
-                latLngs=new ArrayList<>();
-                for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
-                    //get lat and long from database and store it in a list
-                    Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
+        mMap = googleMap;
+        if (id != null) {
+            databaseReference = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+            ValueEventListener valueEventListener = databaseReference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    int count = 1;
+                    String distance;
+                    latLngs = new ArrayList<>();
+                    for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
+                        //get lat and long from database and store it in a list
+                        Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
 
-                    Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
-                    String distance=zoneSnapshot.child("distance").getValue().toString();
-                    LatLng point=new LatLng(lat,lng);
+                        Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
+                        if (zoneSnapshot.child("distance").exists()) {
+                            distance = zoneSnapshot.child("distance").getValue().toString();
+                        } else {
+                            distance = "N/A";
+                        }
+                        LatLng point = new LatLng(lat, lng);
 
-                    MarkerOptions marker = new MarkerOptions();
-                    marker.position(point).title("Distance:"+distance);
+                        MarkerOptions marker = new MarkerOptions();
+                        marker.position(point).title("Distance:" + distance);
 
-                    marker.icon(BitmapDescriptorFactory
-                            .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+                        marker.icon(BitmapDescriptorFactory
+                                .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
 
-                    mMap.addMarker(marker);
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                            point, 12));
+                        mMap.addMarker(marker);
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                point, 12));
 
-                    int arrowColor = Color.RED; // change this if you want another color (Color.BLUE)
-                    int lineColor = Color.RED;
-                    BitmapDescriptor endCapIcon = getEndCapIcon(arrowColor);
+                        int arrowColor = Color.RED; // change this if you want another color (Color.BLUE)
+                        int lineColor = Color.RED;
+                        BitmapDescriptor endCapIcon = getEndCapIcon(arrowColor);
 // setting polyline in the map
 //                    PolylineOptions polylineOptions = new PolylineOptions();
 //                    polylineOptions.color(Color.RED);
 //                    polylineOptions.width(5);
 //
 //                    polylineOptions.addAll(latLngs);
-                    latLngs.add(point);
-                             mMap.addPolyline(new PolylineOptions()
-                            .geodesic(true)
-                            .color(lineColor)
-                            .width(8)
-                            .startCap(new RoundCap())
-                            .endCap(new CustomCap(endCapIcon,8))
-                            .jointType(JointType.ROUND)
-                            .addAll(latLngs));
+                        latLngs.add(point);
+                        mMap.addPolyline(new PolylineOptions()
+                                .geodesic(true)
+                                .color(lineColor)
+                                .width(8)
+                                .startCap(new RoundCap())
+                                .endCap(new CustomCap(endCapIcon, 8))
+                                .jointType(JointType.ROUND)
+                                .addAll(latLngs));
 
-                    count++;
+                        count++;
+                    }
                 }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
 
-            }
+                }
 
-        });
-        databaseReference.addListenerForSingleValueEvent(valueEventListener);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
+            });
+            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            mMap.getUiSettings().setZoomControlsEnabled(true);
+        }
     }
 
     public BitmapDescriptor getEndCapIcon( int color) {

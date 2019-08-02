@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".Activities.OthersActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="50dp"
+        android:orientation="horizontal"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User Id"
+            android:textColor="@color/darkgray"
+            android:gravity="center"
+            android:textSize="15sp"/>
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:hint="Enter User Id"
+            android:id="@+id/user_edit_text"
+            android:padding="5dip"
+            android:inputType="text"
+            android:layout_marginLeft="5dp"
+
+            android:textColor="#000000"
+            android:textSize="20sp"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="50dp"
+        android:orientation="horizontal"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Trip Id"
+            android:textColor="@color/darkgray"
+            android:gravity="center"
+            android:textSize="15sp"/>
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:hint="Enter Trip Id"
+            android:inputType="text"
+            android:id="@+id/trip_edit_text"
+            android:padding="5dip"
+            android:layout_marginLeft="5dp"
+
+            android:textColor="#000000"
+            android:textSize="20sp"
+            />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/submit_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="15dp"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/rounded_button"
+        android:gravity="center"
+
+        android:padding="20dp"
+        android:text="Submit"
+
+        android:textColor="#ffffff"
+        android:textSize="20sp" />
+
+</LinearLayout>

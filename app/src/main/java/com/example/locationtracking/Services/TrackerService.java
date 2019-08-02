@@ -52,9 +52,9 @@ public class TrackerService extends Service {
     private static final String TAG = TrackerService.class.getSimpleName();
     String id = null;
     String androidId;
-    String trackId;
+    String trackId,mode;
     Double duration;
-    SharedPreferences preferences;
+    SharedPreferences preferences,pref2;
     NotificationHelper notificationHelper;
     SharedPreferences.Editor editor;
     private Handler handler;
@@ -122,6 +122,8 @@ public class TrackerService extends Service {
             String start= DateFormat.getDateTimeInstance().format(new Date());
 
 
+            String mode=pref2.getString("mode","N/A");
+
 
 
 
@@ -131,7 +133,7 @@ public class TrackerService extends Service {
                     if(locationName==null){
                         locationName="N/A";
                     }
-                    LocationDetails locationDetails = new LocationDetails(lat, lng, cellID, locationName, ts,distance,start,lac,mcc,mnc);
+                    LocationDetails locationDetails = new LocationDetails(lat, lng, cellID, locationName, ts,distance,start,lac,mcc,mnc,mode);
                     Log.e(TAG, "location update " + location);
                     ref.push().setValue(locationDetails);
                 }
@@ -148,8 +150,9 @@ public class TrackerService extends Service {
         super.onCreate();
          preferences = getBaseContext().getSharedPreferences("LocData", MODE_PRIVATE);
          editor = preferences.edit();
-       SharedPreferences pref2=getBaseContext().getSharedPreferences("MyPref",MODE_PRIVATE);
+       pref2=getBaseContext().getSharedPreferences("MyPref",MODE_PRIVATE);
         duration=Double.valueOf(pref2.getString("duration","1.0"));
+
 
         handler = new Handler();
         notificationHelper=new NotificationHelper(this);
@@ -211,13 +214,19 @@ public class TrackerService extends Service {
 
         super.onStartCommand(intent, flags, startId);
         String strdata = intent.getStringExtra("fromWhere");
+        String track=null;
         if(strdata.equals("main")){
-            trackId=intent.getStringExtra("track id");
+            track=intent.getStringExtra("track id");
         }
         else if(strdata.equals("boot")){
-            trackId=intent.getStringExtra("broadcastId");
+            track=intent.getStringExtra("broadcastId");
+        }
+        else if(strdata.equals("alarm"))
+        {
+            track=intent.getStringExtra("alarmId");
         }
 
+        trackId=pref2.getString("tripId",track);
 
         Log.e("Duration",String.valueOf(duration));
 

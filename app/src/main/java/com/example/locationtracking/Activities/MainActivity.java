@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
@@ -32,11 +33,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.locationtracking.Helpers.AlarmReceiverLifeLog;
 import com.example.locationtracking.Models.CustomAdapter;
 import com.example.locationtracking.Models.DistanceData;
 import com.example.locationtracking.Models.IdDetail;
@@ -81,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     DistanceData distanceData;
     private TextView androidIdtv;
     private String start,end;
+    private ImageButton senBtn;
 
 
     SwipeRefreshLayout mSwipeRefreshLayout;
@@ -90,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 
     String androidId;
+    AlarmReceiverLifeLog receiver;
 
     CustomAdapter customAdapter;
     List<LocationData> ar;
@@ -112,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         locationButton=findViewById(R.id.track_button);
         androidIdtv=findViewById(R.id.android_id_tv);
+
+        senBtn=findViewById(R.id.main_send_btn);
 
 
 
@@ -139,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
 
 
+         receiver = new AlarmReceiverLifeLog();;
 
 
 
@@ -175,6 +183,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 
         androidIdtv.setText(androidId);
+
+        senBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent2 = new Intent(); intent2.setAction(Intent.ACTION_SEND);
+                intent2.setType("text/plain");
+                intent2.putExtra(Intent.EXTRA_TEXT, androidId);
+                startActivity(Intent.createChooser(intent2, "Share via"));
+            }
+        });
 
 
         //check for permission of location
@@ -213,6 +231,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     editor.putInt("count",count);
                     editor.putInt("flag",1);
 
+                    IntentFilter filter = new IntentFilter("com.example.Broadcast");
+
+
+                    registerReceiver(receiver, filter);
+
                     editor.apply();
                     Intent i=new Intent(MainActivity.this,CurrentMapActivity.class);
                     i.putExtra("Trip Id",uniqueId2);
@@ -233,6 +256,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     Intent i=new Intent(MainActivity.this,TrackerService.class);
 
                     stopService(i);
+                   try{
+                       unregisterReceiver(receiver);
+                   }catch (IllegalArgumentException e)
+                   {
+
+                   }
 
 
 
@@ -539,6 +568,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.settings:
                 buildDialogTime();
                 return true;
+            case R.id.others:
+                Intent l=new Intent(MainActivity.this,OthersActivity.class);
+                startActivity(l);
+                return true;
             case R.id.about_us:
                 Intent i=new Intent(MainActivity.this,AboutUsActivity.class);
                 startActivity(i);
@@ -573,6 +606,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         dialogBuilder.setView(dialogView);
 
         final EditText edt = (EditText) dialogView.findViewById(R.id.edit_time);
+        edt.setHint(preferences.getString("duration","2"));
 
         dialogBuilder.setTitle("Location Update Time");
         dialogBuilder.setMessage("Enter in Minutes(Number)");

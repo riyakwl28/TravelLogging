@@ -33,7 +33,7 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
     private List<LocationData> list;
     private TextView timeView;
     private TextView startTv,endTv;
-    private ImageButton locationButton;
+    private ImageButton locationButton,sendBUtton;
     private ImageButton deleteBtn;
 
 
@@ -65,6 +65,7 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
         startTv=convertView.findViewById(R.id.start_tv);
         startTv.setText(item.startTime);
         endTv=convertView.findViewById(R.id.end_tv);
+        sendBUtton=convertView.findViewById(R.id.send_btn);
         endTv.setText(item.endTime);
         deleteBtn=convertView.findViewById(R.id.delete_button);
         final String id=item.trackId;
@@ -75,6 +76,7 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
             public void onClick(View view) {
                 Intent i=new Intent(context, LocationActivity.class);
                 i.putExtra("tripId",item.trackId);
+                i.putExtra("androidId",androidId);
                 context.startActivity(i);
             }
         });
@@ -103,6 +105,15 @@ public class CustomAdapter extends ArrayAdapter<LocationData> {
                 });
                 alert.show();
 
+            }
+        });
+        sendBUtton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent2 = new Intent(); intent2.setAction(Intent.ACTION_SEND);
+                intent2.setType("text/plain");
+                intent2.putExtra(Intent.EXTRA_TEXT, item.trackId);
+                context.startActivity(Intent.createChooser(intent2, "Share via"));
             }
         });
         return convertView;

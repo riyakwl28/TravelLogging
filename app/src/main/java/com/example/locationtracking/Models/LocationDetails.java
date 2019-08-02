@@ -10,7 +10,18 @@ public class LocationDetails {
     private String TimeStamp;
     private String Distance;
     private String Start;
+
+    private String Mode;
     private Integer Mnc,Lac,Mcc;
+
+    public String getMode() {
+        return Mode;
+    }
+
+    public void setMode(String mode) {
+        Mode = mode;
+    }
+
 
     public Integer getMnc() {
         return Mnc;
@@ -94,7 +105,7 @@ public class LocationDetails {
         CellId = cellId;
     }
 
-    public LocationDetails(Double latitude, Double longitude, long cellId,String locationName,String timeStamp,String distance,String start,Integer lac,Integer mcc,Integer mnc) {
+    public LocationDetails(Double latitude, Double longitude, long cellId,String locationName,String timeStamp,String distance,String start,Integer lac,Integer mcc,Integer mnc,String mode) {
         Latitude = latitude;
         Longitude = longitude;
         CellId = cellId;
@@ -105,5 +116,6 @@ public class LocationDetails {
         Lac=lac;
         Mcc=mcc;
         Mnc=mnc;
+        Mode=mode;
     }
 }

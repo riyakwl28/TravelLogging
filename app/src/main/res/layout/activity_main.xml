@@ -10,74 +10,90 @@
     tools:context=".Activities.MainActivity">
 
     <RelativeLayout
-        android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:theme="@style/Theme.AppCompat"
-      >
+        android:layout_height="match_parent"
+        android:theme="@style/Theme.AppCompat">
 
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:id="@+id/main_ll"
+            android:layout_above="@+id/track_button">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="50dp"
+                android:orientation="horizontal">
 
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    android:gravity="center"
+                    android:paddingLeft="15dp"
+                    android:text="User Id:"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="30dp"
+
+                    android:textColor="#696969"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/android_id_tv"
+                    android:layout_width="wrap_content"
+
+                    android:layout_height="30dp"
+                    android:layout_margin="10dp"
+                    android:paddingLeft="5dp"
+                    android:text="User Id"
+                    android:textIsSelectable="true"
+                    android:textColor="#000000"
+                    android:textSize="20sp" />
+                <ImageButton
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:id="@+id/main_send_btn"
+                    android:layout_gravity="end"
+                    android:layout_marginLeft="80dp"
+                    android:background="@drawable/ic_send_black_24dp"
+                    />
+            </LinearLayout>
+
+            <android.support.v4.widget.SwipeRefreshLayout
+                android:id="@+id/swipe_refresh_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/track_button">
+
+                <ListView
+                    android:id="@+id/track_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="User Id"
-                        android:textSize="15sp"
-                        android:layout_margin="5dp"
-                        android:paddingLeft="5dp"
-                        android:textColor="@color/darkgray"
-                        android:gravity="center"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="30dp"
-
-                android:id="@+id/android_id_tv"
-                android:text="User Id"
-                android:textColor="#000000"
-                android:layout_margin="5dp"
-                android:paddingLeft="5dp"
-                android:textSize="20sp"/>
-                </LinearLayout>
-
-                <android.support.v4.widget.SwipeRefreshLayout
-                    android:id="@+id/swipe_refresh_layout"
-                    android:layout_above="@+id/track_button"
-                    android:layout_height="wrap_content"
-                    android:layout_width="match_parent">
-
-            <ListView
-                android:foregroundGravity="top"
-                android:id="@+id/track_list"
-                android:layout_alignParentTop="true"
-                android:layout_height="wrap_content"
-                android:layout_width="match_parent">
+                    android:layout_alignParentTop="true"
+                    android:foregroundGravity="top">
 
 
-            </ListView>
-                </android.support.v4.widget.SwipeRefreshLayout>
-            </LinearLayout>
+                </ListView>
+            </android.support.v4.widget.SwipeRefreshLayout>
+        </LinearLayout>
 
 
         <Button
-            android:background="@drawable/rounded_button"
-            android:gravity="center"
             android:id="@+id/track_button"
-            android:layout_alignParentBottom="true"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="15dp"
+            android:layout_alignParentBottom="true"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
-            android:layout_width="match_parent"
+            android:layout_marginBottom="15dp"
+            android:background="@drawable/rounded_button"
+            android:gravity="center"
 
             android:padding="20dp"
             android:text="Start Tracking"
+
             android:textColor="#ffffff"
             android:textSize="20sp" />
 
@@ -89,11 +105,12 @@
             android:visibility="invisible" />
 
     </RelativeLayout>
+
     <android.support.design.widget.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
-        app:menu="@menu/drawer_menu"/>
+        app:menu="@menu/drawer_menu" />
 </android.support.v4.widget.DrawerLayout>

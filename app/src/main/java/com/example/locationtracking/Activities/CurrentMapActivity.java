@@ -15,6 +15,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 
 import com.example.locationtracking.R;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -44,6 +48,8 @@ public class CurrentMapActivity extends AppCompatActivity implements OnMapReadyC
     private String androidId;
     String id;
     List<LatLng> latLngs;
+    private Spinner spinner;
+    private static final String[] paths = {"Car", "Train", "Walking","Bus"};
 
     DatabaseReference databaseReference;
     final String TAG = "PathGoogleMapActivity";
@@ -55,10 +61,34 @@ public class CurrentMapActivity extends AppCompatActivity implements OnMapReadyC
         setContentView(R.layout.activity_current_map);
         androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
+        spinner = (Spinner)findViewById(R.id.spinner);
+        ArrayAdapter<String>adapter = new ArrayAdapter<String>(CurrentMapActivity.this,
+                android.R.layout.simple_spinner_item,paths);
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view,
+                                       int position, long id) {
+                String data=parent.getItemAtPosition(position).toString();
+                SharedPreferences preferences=getSharedPreferences("MyPref",MODE_PRIVATE);
+                SharedPreferences.Editor editor=preferences.edit();
+                editor.putString("mode",data);
+                editor.apply();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+
 
 
         id= getIntent().getStringExtra("Trip Id");
-        Log.e("Map",id);
+
 
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -74,56 +104,59 @@ public class CurrentMapActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap=googleMap;
-        databaseReference= FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
-        ValueEventListener valueEventListener= databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                int count=1;
-                latLngs=new ArrayList<>();
-                for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
-                    //get lat and long from database and store it in a list
-                    Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
+        if(id!=null) {
+            databaseReference = FirebaseDatabase.getInstance().getReference().child(androidId).child(id).child("locations");
+            ValueEventListener valueEventListener = databaseReference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    int count = 1;
+                    latLngs = new ArrayList<>();
+                    for (DataSnapshot zoneSnapshot : dataSnapshot.getChildren()) {
+                        //get lat and long from database and store it in a list
+                        Double lat = zoneSnapshot.child("latitude").getValue(Double.class);
 
-                    Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
-                    String distance=zoneSnapshot.child("distance").getValue().toString();
-                    LatLng point=new LatLng(lat,lng);
+                        Double lng = zoneSnapshot.child("longitude").getValue(Double.class);
+                        String distance = zoneSnapshot.child("distance").getValue().toString();
+                        LatLng point = new LatLng(lat, lng);
 
-                    MarkerOptions marker = new MarkerOptions();
-                    marker.position(point).title("Distance:"+distance);
+                        MarkerOptions marker = new MarkerOptions();
+                        marker.position(point).title("Distance:" + distance);
 
-                    marker.icon(BitmapDescriptorFactory
-                            .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+                        marker.icon(BitmapDescriptorFactory
+                                .defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
 
-                    mMap.addMarker(marker);
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                            point, 12));
+                        mMap.addMarker(marker);
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                                point, 12));
 
-                    int arrowColor = Color.RED; // change this if you want another color (Color.BLUE)
-                    int lineColor = Color.RED;
-                    BitmapDescriptor endCapIcon = getEndCapIcon(arrowColor);
+                        int arrowColor = Color.RED; // change this if you want another color (Color.BLUE)
+                        int lineColor = Color.RED;
+                        BitmapDescriptor endCapIcon = getEndCapIcon(arrowColor);
 
-                    latLngs.add(point);
-                    mMap.addPolyline(new PolylineOptions()
-                            .geodesic(true)
-                            .color(lineColor)
-                            .width(8)
-                            .startCap(new RoundCap())
-                            .endCap(new CustomCap(endCapIcon,8))
-                            .jointType(JointType.ROUND)
-                            .addAll(latLngs));
+                        latLngs.add(point);
+                        mMap.addPolyline(new PolylineOptions()
+                                .geodesic(true)
+                                .color(lineColor)
+                                .width(8)
+                                .startCap(new RoundCap())
+                                .endCap(new CustomCap(endCapIcon, 8))
+                                .jointType(JointType.ROUND)
+                                .addAll(latLngs));
 
-                    count++;
+                        count++;
+                    }
                 }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
 
-            }
+                }
 
-        });
-        databaseReference.addListenerForSingleValueEvent(valueEventListener);
+            });
+            databaseReference.addListenerForSingleValueEvent(valueEventListener);
+
+        }
         mMap.getUiSettings().setZoomControlsEnabled(true);
     }
 
@@ -182,6 +215,7 @@ public class CurrentMapActivity extends AppCompatActivity implements OnMapReadyC
         {
            Intent i=new Intent(CurrentMapActivity.this,LocationActivity.class);
            i.putExtra("tripId",id);
+           i.putExtra("androidId",androidId);
            startActivity(i);
         }
         return super.onOptionsItemSelected(item);
